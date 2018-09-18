@@ -1,6 +1,8 @@
 ---
-title: "EnhancedResults"
-output: html_document
+title: "Enhanced Results"
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -313,6 +315,10 @@ Imputed analysese below
 
 Descriptives for base
 ```{r}
+
+descFun = function(x){
+  x = data.frame(t(x))
+}
 datAnalysisAllDes = lapply(1:m, function(x){subset(datAnalysisAll[[x]], Time == 0)})
 
 
@@ -324,13 +330,9 @@ for(i in 1:m){
 mean.out = NULL
 for(i in 1:m) {
   mean.out[[i]] = apply(datAnalysisAllDes[[i]], 2, mean)
-  mean.out[[i]] = data.frame(mean.out)
+  mean.out = data.frame(mean.out)
 }
 
-
-descFun = function(x){
-  x = data.frame(t(x))
-}
 mean.out = descFun(mean.out)
 
 
@@ -348,11 +350,16 @@ Descriptives for post
 ```{r}
 
 
+descFun = function(x){
+  x = data.frame(t(x))
+}
 datAnalysisAllDes = lapply(1:m, function(x){subset(datAnalysisAll[[x]], Time == 1)})
+
 
 for(i in 1:m){
   datAnalysisAllDes[[i]]$Treatment= datAnalysisAllDes[[i]]$Treatment =NULL
 }
+
 
 mean.out = NULL
 for(i in 1:m) {
@@ -360,10 +367,6 @@ for(i in 1:m) {
   mean.out = data.frame(mean.out)
 }
 
-
-descFun = function(x){
-  x = data.frame(t(x))
-}
 mean.out = descFun(mean.out)
 
 
@@ -374,8 +377,8 @@ for(i in 1:m) {
   sd.out = data.frame(sd.out)
 }
 sd.out = descFun(sd.out)
-
 mean.sd.out= mi.meld(mean.out, sd.out)
+mean.sd.out mi.meld(mean.out, sd.out)
 mean.sd.out
 
 ```
