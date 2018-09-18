@@ -1,6 +1,8 @@
 ---
-title: "EnhancedResults"
-output: html_document
+title: "Enhanced Results"
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -61,6 +63,7 @@ library(jtools)
 library(paran)
 library(effsize)
 library(multcomp)
+library(MuMIn)
 
 
 
@@ -285,8 +288,8 @@ datAnalysisAll = lapply(1:m, function(x){datAdultAnalysisImpute$imputations[[x]]
 Multilevel 
 
 #######
-Check randomization with no imputed, because you 
-```{r}
+Check randomization with no imputed
+```{r, echo=FALSE}
 randomOutputComplete = multinom(Treatment ~ Age + factor(Gender) + factor(Race)+ factor(SexualOrientation)+ factor(Edu)+ factor(RelationshipStatus)+ factor(Employment), data =  datAdultAnalysisComplete)
 randomOutputComplete = summary(randomOutputComplete)
 coefs1 = randomOutputComplete$coefficients[1,]
@@ -312,7 +315,11 @@ coefsSes2
 Imputed analysese below
 
 Descriptives for base
-```{r}
+```{r, echo=FALSE}
+
+descFun = function(x){
+  x = data.frame(t(x))
+}
 datAnalysisAllDes = lapply(1:m, function(x){subset(datAnalysisAll[[x]], Time == 0)})
 
 
@@ -324,13 +331,9 @@ for(i in 1:m){
 mean.out = NULL
 for(i in 1:m) {
   mean.out[[i]] = apply(datAnalysisAllDes[[i]], 2, mean)
-  mean.out[[i]] = data.frame(mean.out)
+  mean.out = data.frame(mean.out)
 }
 
-
-descFun = function(x){
-  x = data.frame(t(x))
-}
 mean.out = descFun(mean.out)
 
 
@@ -345,14 +348,19 @@ mean.sd.out= mi.meld(mean.out, sd.out)
 mean.sd.out
 ```
 Descriptives for post
-```{r}
+```{r, echo=FALSE}
 
 
+descFun = function(x){
+  x = data.frame(t(x))
+}
 datAnalysisAllDes = lapply(1:m, function(x){subset(datAnalysisAll[[x]], Time == 1)})
+
 
 for(i in 1:m){
   datAnalysisAllDes[[i]]$Treatment= datAnalysisAllDes[[i]]$Treatment =NULL
 }
+
 
 mean.out = NULL
 for(i in 1:m) {
@@ -360,10 +368,6 @@ for(i in 1:m) {
   mean.out = data.frame(mean.out)
 }
 
-
-descFun = function(x){
-  x = data.frame(t(x))
-}
 mean.out = descFun(mean.out)
 
 
@@ -374,7 +378,7 @@ for(i in 1:m) {
   sd.out = data.frame(sd.out)
 }
 sd.out = descFun(sd.out)
-
+mean.sd.out= mi.meld(mean.out, sd.out)
 mean.sd.out= mi.meld(mean.out, sd.out)
 mean.sd.out
 
@@ -395,13 +399,11 @@ for(i in 1:m){
   datAnalysisT3[[i]] = subset(datAnalysisAll[[i]], Treatment == 3)
 }
 
-
-
 ```
 ###############
 RAS Time and T1
 ###############
-```{r}
+```{r, echo=FALSE}
 output = list()
 outputReg = list()
 coef_output =  NULL
@@ -424,7 +426,7 @@ for(i in 1:m){
   se_output[[i]] = output[[i]]$coefficients[,2]
 }
 coef_output = data.frame(coef_output)
-coef_output
+
 quickTrans = function(x){
   x = data.frame(x)
   x = t(x)
@@ -458,7 +460,7 @@ round(results,3)
 ###############
 RAS Time and T2
 ###############
-```{r}
+```{r, echo=FALSE}
 output = list()
 outputReg = list()
 coef_output =  NULL
@@ -481,7 +483,7 @@ for(i in 1:m){
   se_output[[i]] = output[[i]]$coefficients[,2]
 }
 coef_output = data.frame(coef_output)
-coef_output
+
 quickTrans = function(x){
   x = data.frame(x)
   x = t(x)
@@ -515,7 +517,7 @@ round(results,3)
 ###############
 RAS Time and T3
 ###############
-```{r}
+```{r, echo=FALSE}
 output = list()
 outputReg = list()
 coef_output =  NULL
@@ -538,7 +540,7 @@ for(i in 1:m){
   se_output[[i]] = output[[i]]$coefficients[,2]
 }
 coef_output = data.frame(coef_output)
-coef_output
+
 quickTrans = function(x){
   x = data.frame(x)
   x = t(x)
@@ -569,7 +571,7 @@ round(results,3)
 ###############
 INQ Time and T1
 ###############
-```{r}
+```{r, echo=FALSE}
 output = list()
 outputReg = list()
 coef_output =  NULL
@@ -592,7 +594,7 @@ for(i in 1:m){
   se_output[[i]] = output[[i]]$coefficients[,2]
 }
 coef_output = data.frame(coef_output)
-coef_output
+
 quickTrans = function(x){
   x = data.frame(x)
   x = t(x)
@@ -626,7 +628,7 @@ round(results,3)
 ###############
 INQ Time and T2
 ###############
-```{r}
+```{r, echo=FALSE}
 output = list()
 outputReg = list()
 coef_output =  NULL
@@ -649,7 +651,7 @@ for(i in 1:m){
   se_output[[i]] = output[[i]]$coefficients[,2]
 }
 coef_output = data.frame(coef_output)
-coef_output
+
 quickTrans = function(x){
   x = data.frame(x)
   x = t(x)
@@ -683,7 +685,7 @@ round(results,3)
 ###############
 INQ Time and T3
 ###############
-```{r}
+```{r, echo=FALSE}
 output = list()
 outputReg = list()
 coef_output =  NULL
@@ -706,7 +708,7 @@ for(i in 1:m){
   se_output[[i]] = output[[i]]$coefficients[,2]
 }
 coef_output = data.frame(coef_output)
-coef_output
+
 quickTrans = function(x){
   x = data.frame(x)
   x = t(x)
@@ -740,7 +742,7 @@ round(results,3)
 ###############
 SSMI Time and T1
 ###############
-```{r}
+```{r, echo=FALSE}
 output = list()
 outputReg = list()
 coef_output =  NULL
@@ -763,7 +765,7 @@ for(i in 1:m){
   se_output[[i]] = output[[i]]$coefficients[,2]
 }
 coef_output = data.frame(coef_output)
-coef_output
+
 quickTrans = function(x){
   x = data.frame(x)
   x = t(x)
@@ -797,7 +799,7 @@ round(results,3)
 ###############
 SSMI Time and T2
 ###############
-```{r}
+```{r, echo=FALSE}
 output = list()
 outputReg = list()
 coef_output =  NULL
@@ -820,7 +822,7 @@ for(i in 1:m){
   se_output[[i]] = output[[i]]$coefficients[,2]
 }
 coef_output = data.frame(coef_output)
-coef_output
+
 quickTrans = function(x){
   x = data.frame(x)
   x = t(x)
@@ -854,7 +856,7 @@ round(results,3)
 ###############
 SSMI Time and T3
 ###############
-```{r}
+```{r, echo=FALSE}
 output = list()
 outputReg = list()
 coef_output =  NULL
@@ -877,7 +879,7 @@ for(i in 1:m){
   se_output[[i]] = output[[i]]$coefficients[,2]
 }
 coef_output = data.frame(coef_output)
-coef_output
+
 quickTrans = function(x){
   x = data.frame(x)
   x = t(x)
@@ -911,7 +913,7 @@ round(results,3)
 ###############
 SIS Time and T1
 ###############
-```{r}
+```{r, echo=FALSE}
 output = list()
 outputReg = list()
 coef_output =  NULL
@@ -934,7 +936,7 @@ for(i in 1:m){
   se_output[[i]] = output[[i]]$coefficients[,2]
 }
 coef_output = data.frame(coef_output)
-coef_output
+
 quickTrans = function(x){
   x = data.frame(x)
   x = t(x)
@@ -968,7 +970,7 @@ round(results,3)
 ###############
 SIS Time and T2
 ###############
-```{r}
+```{r, echo=FALSE}
 output = list()
 outputReg = list()
 coef_output =  NULL
@@ -991,7 +993,7 @@ for(i in 1:m){
   se_output[[i]] = output[[i]]$coefficients[,2]
 }
 coef_output = data.frame(coef_output)
-coef_output
+
 quickTrans = function(x){
   x = data.frame(x)
   x = t(x)
@@ -1025,7 +1027,7 @@ round(results,3)
 ###############
 SIS Time and T3
 ###############
-```{r}
+```{r, echo=FALSE}
 output = list()
 outputReg = list()
 coef_output =  NULL
@@ -1048,7 +1050,7 @@ for(i in 1:m){
   se_output[[i]] = output[[i]]$coefficients[,2]
 }
 coef_output = data.frame(coef_output)
-coef_output
+
 quickTrans = function(x){
   x = data.frame(x)
   x = t(x)
