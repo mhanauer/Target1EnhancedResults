@@ -1,23 +1,14 @@
 ---
-title: "EnhancedResults"
-output: html_document
+title: "Enhanced Results"
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-Ok so I need to transpose the data.  Use row.names = NULL forces numbering, so that will be used when we transpose it
-
-Then grab the variables that we want.  We want the id, treatment, section 1, sections 1 through 4 and then demographics
-
-Then we are renaming every variable. 
-
-Clean the adult data set first then youth
-
-
-
-## Testing data trying to find how the averages over time are the exact same
 ```{r, include=FALSE}
 rm(list=ls())
 setwd("P:/Evaluation/TN Lives Count_Writing/4_Target1_EnhancedCrisisFollow-up/3_Data & Data Analyses")
@@ -61,6 +52,7 @@ library(jtools)
 library(paran)
 library(effsize)
 library(multcomp)
+library(MuMIn)
 
 
 
@@ -282,37 +274,48 @@ summary(datAdultAnalysisImpute)
 
 datAnalysisAll = lapply(1:m, function(x){datAdultAnalysisImpute$imputations[[x]]})
 ```
-Multilevel 
+Here I am checking the randomization. Using three logisitic regression comparing T1 versus T2 across covariates at baseline, then T1 versus T3 and finally T2 versus T3.
 
-#######
-Check randomization with no imputed, because you 
+There is significant in relationship status between treatment two and three for relationship status.  Single people are more likely to be in treatment two relative to treatement three 
 ```{r}
-randomOutputComplete = multinom(Treatment ~ Age + factor(Gender) + factor(Race)+ factor(SexualOrientation)+ factor(Edu)+ factor(RelationshipStatus)+ factor(Employment), data =  datAdultAnalysisComplete)
-randomOutputComplete = summary(randomOutputComplete)
-coefs1 = randomOutputComplete$coefficients[1,]
-coefs2 = randomOutputComplete$coefficients[2,]  
-ses1 = randomOutputComplete$standard.errors[1,]
-ses2 = randomOutputComplete$standard.errors[2,]
 
-funPvalue  = function(x,y){
-  z_stat = (x/y)
-  pvalue = 2*pnorm(-abs(z_stat))
-  all = list("z_stat" = z_stat, "pvalue" = pvalue)
-  return(all)
-}
 
-coefsSes1 = funPvalue(coefs1, ses1)
-coefsSes1
+datAdultRandomT12 = subset(datAdultAnalysisComplete, Time == 0 & Treatment == 1  | Treatment == 2)
+datAdultRandomT12$Treatment = factor(datAdultRandomT12$Treatment)
+datAdultRandomT12$Treatment == ifelse(datAdultRandomT12$Treatment == 1, 1, 0)
 
-coefsSes2 = funPvalue(coefs2, ses2)
-coefsSes2 
+modelT12 = glm(Treatment ~  Age + Gender + Race + SexualOrientation + RelationshipStatus + Edu + Employment, data = datAdultRandomT12, family = "binomial")
 
+summary(modelT12)
+
+datAdultRandomT13 = subset(datAdultAnalysisComplete, Time == 0 & Treatment == 1  | Treatment == 3)
+datAdultRandomT13$Treatment = factor(datAdultRandomT13$Treatment)
+datAdultRandomT13$Treatment == ifelse(datAdultRandomT13$Treatment == 1, 1, 0)
+
+
+modelT13 = glm(Treatment ~  Age + Gender + Race + SexualOrientation + RelationshipStatus + Edu + Employment, data = datAdultRandomT13, family = "binomial")
+
+summary(modelT13)
+
+
+datAdultRandomT23 = subset(datAdultAnalysisComplete, Time == 0 & Treatment == 2  | Treatment == 3)
+datAdultRandomT23$Treatment = factor(datAdultRandomT23$Treatment)
+datAdultRandomT23$Treatment == ifelse(datAdultRandomT23$Treatment == 2, 1, 0)
+
+
+modelT23 = glm(Treatment ~  Age + Gender + Race + SexualOrientation + RelationshipStatus + Edu + Employment, data = datAdultRandomT23, family = "binomial")
+
+summary(modelT23)
 ```
 ########################
 Imputed analysese below
 
 Descriptives for base
-```{r}
+```{r, echo=FALSE}
+
+descFun = function(x){
+  x = data.frame(t(x))
+}
 datAnalysisAllDes = lapply(1:m, function(x){subset(datAnalysisAll[[x]], Time == 0)})
 
 
@@ -324,13 +327,9 @@ for(i in 1:m){
 mean.out = NULL
 for(i in 1:m) {
   mean.out[[i]] = apply(datAnalysisAllDes[[i]], 2, mean)
-  mean.out[[i]] = data.frame(mean.out)
+  mean.out = data.frame(mean.out)
 }
 
-
-descFun = function(x){
-  x = data.frame(t(x))
-}
 mean.out = descFun(mean.out)
 
 
@@ -345,14 +344,19 @@ mean.sd.out= mi.meld(mean.out, sd.out)
 mean.sd.out
 ```
 Descriptives for post
-```{r}
+```{r, echo=FALSE}
 
 
+descFun = function(x){
+  x = data.frame(t(x))
+}
 datAnalysisAllDes = lapply(1:m, function(x){subset(datAnalysisAll[[x]], Time == 1)})
+
 
 for(i in 1:m){
   datAnalysisAllDes[[i]]$Treatment= datAnalysisAllDes[[i]]$Treatment =NULL
 }
+
 
 mean.out = NULL
 for(i in 1:m) {
@@ -360,10 +364,6 @@ for(i in 1:m) {
   mean.out = data.frame(mean.out)
 }
 
-
-descFun = function(x){
-  x = data.frame(t(x))
-}
 mean.out = descFun(mean.out)
 
 
@@ -374,7 +374,7 @@ for(i in 1:m) {
   sd.out = data.frame(sd.out)
 }
 sd.out = descFun(sd.out)
-
+mean.sd.out= mi.meld(mean.out, sd.out)
 mean.sd.out= mi.meld(mean.out, sd.out)
 mean.sd.out
 
@@ -395,13 +395,11 @@ for(i in 1:m){
   datAnalysisT3[[i]] = subset(datAnalysisAll[[i]], Treatment == 3)
 }
 
-
-
 ```
 ###############
 RAS Time and T1
 ###############
-```{r}
+```{r, echo=FALSE}
 output = list()
 outputReg = list()
 coef_output =  NULL
@@ -424,7 +422,7 @@ for(i in 1:m){
   se_output[[i]] = output[[i]]$coefficients[,2]
 }
 coef_output = data.frame(coef_output)
-coef_output
+
 quickTrans = function(x){
   x = data.frame(x)
   x = t(x)
@@ -458,7 +456,7 @@ round(results,3)
 ###############
 RAS Time and T2
 ###############
-```{r}
+```{r, echo=FALSE}
 output = list()
 outputReg = list()
 coef_output =  NULL
@@ -481,7 +479,7 @@ for(i in 1:m){
   se_output[[i]] = output[[i]]$coefficients[,2]
 }
 coef_output = data.frame(coef_output)
-coef_output
+
 quickTrans = function(x){
   x = data.frame(x)
   x = t(x)
@@ -515,7 +513,7 @@ round(results,3)
 ###############
 RAS Time and T3
 ###############
-```{r}
+```{r, echo=FALSE}
 output = list()
 outputReg = list()
 coef_output =  NULL
@@ -538,7 +536,7 @@ for(i in 1:m){
   se_output[[i]] = output[[i]]$coefficients[,2]
 }
 coef_output = data.frame(coef_output)
-coef_output
+
 quickTrans = function(x){
   x = data.frame(x)
   x = t(x)
@@ -569,7 +567,7 @@ round(results,3)
 ###############
 INQ Time and T1
 ###############
-```{r}
+```{r, echo=FALSE}
 output = list()
 outputReg = list()
 coef_output =  NULL
@@ -592,7 +590,7 @@ for(i in 1:m){
   se_output[[i]] = output[[i]]$coefficients[,2]
 }
 coef_output = data.frame(coef_output)
-coef_output
+
 quickTrans = function(x){
   x = data.frame(x)
   x = t(x)
@@ -626,7 +624,7 @@ round(results,3)
 ###############
 INQ Time and T2
 ###############
-```{r}
+```{r, echo=FALSE}
 output = list()
 outputReg = list()
 coef_output =  NULL
@@ -649,7 +647,7 @@ for(i in 1:m){
   se_output[[i]] = output[[i]]$coefficients[,2]
 }
 coef_output = data.frame(coef_output)
-coef_output
+
 quickTrans = function(x){
   x = data.frame(x)
   x = t(x)
@@ -683,7 +681,7 @@ round(results,3)
 ###############
 INQ Time and T3
 ###############
-```{r}
+```{r, echo=FALSE}
 output = list()
 outputReg = list()
 coef_output =  NULL
@@ -706,7 +704,7 @@ for(i in 1:m){
   se_output[[i]] = output[[i]]$coefficients[,2]
 }
 coef_output = data.frame(coef_output)
-coef_output
+
 quickTrans = function(x){
   x = data.frame(x)
   x = t(x)
@@ -740,7 +738,7 @@ round(results,3)
 ###############
 SSMI Time and T1
 ###############
-```{r}
+```{r, echo=FALSE}
 output = list()
 outputReg = list()
 coef_output =  NULL
@@ -763,7 +761,7 @@ for(i in 1:m){
   se_output[[i]] = output[[i]]$coefficients[,2]
 }
 coef_output = data.frame(coef_output)
-coef_output
+
 quickTrans = function(x){
   x = data.frame(x)
   x = t(x)
@@ -797,7 +795,7 @@ round(results,3)
 ###############
 SSMI Time and T2
 ###############
-```{r}
+```{r, echo=FALSE}
 output = list()
 outputReg = list()
 coef_output =  NULL
@@ -820,7 +818,7 @@ for(i in 1:m){
   se_output[[i]] = output[[i]]$coefficients[,2]
 }
 coef_output = data.frame(coef_output)
-coef_output
+
 quickTrans = function(x){
   x = data.frame(x)
   x = t(x)
@@ -854,7 +852,7 @@ round(results,3)
 ###############
 SSMI Time and T3
 ###############
-```{r}
+```{r, echo=FALSE}
 output = list()
 outputReg = list()
 coef_output =  NULL
@@ -877,7 +875,7 @@ for(i in 1:m){
   se_output[[i]] = output[[i]]$coefficients[,2]
 }
 coef_output = data.frame(coef_output)
-coef_output
+
 quickTrans = function(x){
   x = data.frame(x)
   x = t(x)
@@ -911,7 +909,7 @@ round(results,3)
 ###############
 SIS Time and T1
 ###############
-```{r}
+```{r, echo=FALSE}
 output = list()
 outputReg = list()
 coef_output =  NULL
@@ -934,7 +932,7 @@ for(i in 1:m){
   se_output[[i]] = output[[i]]$coefficients[,2]
 }
 coef_output = data.frame(coef_output)
-coef_output
+
 quickTrans = function(x){
   x = data.frame(x)
   x = t(x)
@@ -968,7 +966,7 @@ round(results,3)
 ###############
 SIS Time and T2
 ###############
-```{r}
+```{r, echo=FALSE}
 output = list()
 outputReg = list()
 coef_output =  NULL
@@ -991,7 +989,7 @@ for(i in 1:m){
   se_output[[i]] = output[[i]]$coefficients[,2]
 }
 coef_output = data.frame(coef_output)
-coef_output
+
 quickTrans = function(x){
   x = data.frame(x)
   x = t(x)
@@ -1025,7 +1023,7 @@ round(results,3)
 ###############
 SIS Time and T3
 ###############
-```{r}
+```{r, echo=FALSE}
 output = list()
 outputReg = list()
 coef_output =  NULL
@@ -1048,7 +1046,7 @@ for(i in 1:m){
   se_output[[i]] = output[[i]]$coefficients[,2]
 }
 coef_output = data.frame(coef_output)
-coef_output
+
 quickTrans = function(x){
   x = data.frame(x)
   x = t(x)
