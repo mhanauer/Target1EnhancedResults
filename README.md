@@ -1061,7 +1061,7 @@ stdSeOutput = data.frame(stdSe)
 coef_output = data.frame(coef_output, stdBetaOutput)
 se_output = data.frame(se_output, stdSeOutput)
 
-# Figure out the degrees of freedom 
+# Figure out the degrees of freedo 
 
 #coefsAll = mi.meld(q = coef_output, se = se_output)
 
