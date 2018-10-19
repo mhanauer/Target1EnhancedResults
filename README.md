@@ -10,7 +10,6 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r, include=FALSE}
-rm(list=ls())
 setwd("P:/Evaluation/TN Lives Count_Writing/4_Target1_EnhancedCrisisFollow-up/3_Data & Data Analyses")
 datPreAdult = read.csv("Target1EnhancedBaseAdult.csv", header = TRUE)
 datPostAdult = read.csv("Target1EnhancedPostAdult.csv", header = TRUE)
@@ -82,7 +81,7 @@ head(datAdult)
 
 head(datAdultTreat)
 
-datAdult = merge(datAdult, datAdultTreat, by = "Adult.ID", all.x = TRUE, sort = TRUE)
+datAdult = merge(datAdult, datAdultTreat, by = "Adult.ID", sort = TRUE)
 head(datAdult)
 
 
@@ -274,12 +273,50 @@ summary(datAdultAnalysisImpute)
 
 datAnalysisAll = lapply(1:m, function(x){datAdultAnalysisImpute$imputations[[x]]})
 ```
+#####################
+Checking descriptives at each time point
+#####################
+```{r}
+datAdultAnalysisCompleteBase = subset(datAdultAnalysis, Time == 0)
+describe(datAdultAnalysisCompleteBase)
+describe.factor(datAdultAnalysisCompleteBase$Gender)
+describe.factor(datAdultAnalysisCompleteBase$Race)
+describe.factor(datAdultAnalysisCompleteBase$RelationshipStatus)
+describe.factor(datAdultAnalysisCompleteBase$Edu)
+describe.factor(datAdultAnalysisCompleteBase$Employment)
+
+
+round(sd(datAdultAnalysisCompleteBase$Age),2)
+round(sd(datAdultAnalysisCompleteBase$RASTotalScore, na.rm = TRUE),2)
+round(sd(datAdultAnalysisCompleteBase$INQTotalScore, na.rm = TRUE),2)
+round(sd(datAdultAnalysisCompleteBase$SSMITotalScore, na.rm = TRUE),2)
+round(sd(datAdultAnalysisCompleteBase$SISTotalScore, na.rm = TRUE),2)
+
+
+# Post
+datAdultAnalysisCompletePost = subset(datAdultAnalysis, Time == 1)
+describe(datAdultAnalysisCompletePost)
+describe.factor(datAdultAnalysisCompletePost$Gender)
+describe.factor(datAdultAnalysisCompletePost$Race)
+describe.factor(datAdultAnalysisCompletePost$RelationshipStatus)
+describe.factor(datAdultAnalysisCompletePost$Edu)
+describe.factor(datAdultAnalysisCompletePost$Employment)
+
+
+round(sd(datAdultAnalysisCompletePost$Age),2)
+round(sd(datAdultAnalysisCompletePost$RASTotalScore, na.rm = TRUE),2)
+round(sd(datAdultAnalysisCompletePost$INQTotalScore, na.rm = TRUE),2)
+round(sd(datAdultAnalysisCompletePost$SSMITotalScore, na.rm = TRUE),2)
+round(sd(datAdultAnalysisCompletePost$SISTotalScore, na.rm = TRUE),2)
+
+
+```
+
+
 Here I am checking the randomization. Using three logisitic regression comparing T1 versus T2 across covariates at baseline, then T1 versus T3 and finally T2 versus T3.
 
 There is significant in relationship status between treatment two and three for relationship status.  Single people are more likely to be in treatment two relative to treatement three 
 ```{r}
-
-
 datAdultRandomT12 = subset(datAdultAnalysisComplete, Time == 0 & Treatment == 1  | Treatment == 2)
 datAdultRandomT12$Treatment = factor(datAdultRandomT12$Treatment)
 datAdultRandomT12$Treatment == ifelse(datAdultRandomT12$Treatment == 1, 1, 0)
