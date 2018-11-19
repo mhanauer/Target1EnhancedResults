@@ -1,25 +1,15 @@
 ---
-title: "EnhancedResults"
-output: html_document
+title: "Enhanced Results"
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-Ok so I need to transpose the data.  Use row.names = NULL forces numbering, so that will be used when we transpose it
-
-Then grab the variables that we want.  We want the id, treatment, section 1, sections 1 through 4 and then demographics
-
-Then we are renaming every variable. 
-
-Clean the adult data set first then youth
-
-
-
-## Testing data trying to find how the averages over time are the exact same
 ```{r, include=FALSE}
-rm(list=ls())
 setwd("P:/Evaluation/TN Lives Count_Writing/4_Target1_EnhancedCrisisFollow-up/3_Data & Data Analyses")
 datPreAdult = read.csv("Target1EnhancedBaseAdult.csv", header = TRUE)
 datPostAdult = read.csv("Target1EnhancedPostAdult.csv", header = TRUE)
@@ -61,6 +51,7 @@ library(jtools)
 library(paran)
 library(effsize)
 library(multcomp)
+library(MuMIn)
 
 
 
@@ -81,6 +72,7 @@ colnames(datPreAdult)[colnames(datPreAdult) == "Added.V2..Thinking.of.Ways.to.Ki
 ## Now merge everything
 datAdult = merge(datPreAdult, datPostAdult, by = "Adult.ID", sort = TRUE)
 head(datAdult)
+dim(datAdult)
 
 ### 357 is still around above
 
@@ -90,9 +82,9 @@ head(datAdult)
 
 head(datAdultTreat)
 
-datAdult = merge(datAdult, datAdultTreat, by = "Adult.ID", all.x = TRUE, sort = TRUE)
+datAdult = merge(datAdult, datAdultTreat, by = "Adult.ID", sort = TRUE)
 head(datAdult)
-
+dim(datAdult)
 
 
 
@@ -115,7 +107,9 @@ head(datAdult)
 #Checking for issues with adult data set
 
 summary(datAdult)
+dim(datAdult)
 
+describe.factor(datAdult$Age)
 # One person age is 451 get rid of them
 datAdult = subset(datAdult, Age < 450)
 dim(datAdult)
@@ -135,6 +129,7 @@ describe.factor(datAdult$Treatment)
 
 ## If there are NA's for treatment then need to drop them
 datAdult = subset(datAdult, Treatment == 1 | Treatment == 2 | Treatment == 3)
+dim(datAdult)
 compmeans(datAdult$RAS1, datAdult$Time)
 
 # Three items are reversed scored: f = 6, g = 7, j = 10
@@ -146,18 +141,6 @@ datAdult$INQ10= ifelse(datAdult$INQ10== 1, 5, ifelse(datAdult$INQ10== 2,4, ifels
 
 
 head(datAdult)
-
-### 357 is still around above
-###### Scores are different above but very similar
-
-## Now long format so don't have to rename twice
-
-
-
-# Rename everything, which you will rename for the youth data set as well 
-# 
-
-
 
 
 
@@ -204,31 +187,28 @@ SISSub1 = SIS[c(1:4)]
 #Subscale 2 for SIS: e-g: 5:7
 SISSub2 = SIS[c(5:7)]
 
-
+SSMIPrePost = datAdult[c(41:45)]
 # Creating sum scores for the data analysis that contains all data not just pre data
 datAdultDemos = datAdult[c(1:10)]
-head(datAdultDemos)
 
-RASPrePost = datAdult[c(11:30)]
-head(RAS)
-INQPrePost = datAdult[c(31:40)]
-head(INQ)
-SSMIPrePost = datAdult[c(41:45)]
-head(SSMI)
-SISPrePost = datAdult[c(46:52)]
-head(SIS)
 
-RASTotalScore = rowSums(RASPrePost)
-INQTotalScore = rowSums(INQPrePost)
+RASTotalScoreF1 = rowSums(RASSub1)
+RASTotalScoreF2 = rowSums(RASSub2)
+RASTotalScoreF3 = rowSums(RASSub3)
+RASTotalScoreF5 = rowSums(RASSub5)
+INQTotalScoreF1 = rowSums(INQSub1)
+INQTotalScoreF2 = rowSums(INQSub2)
+SISTotalScoreF1 = rowSums(SISSub1)
+SISTotalScoreF2 = rowSums(SISSub2)
 SSMITotalScore = rowSums(SSMIPrePost)
-SISTotalScore = rowSums(SISPrePost)
+
 
 ### Jennifer Lockman full data set
-datAdultAnalysisJen = data.frame(datAdultDemos, RASPrePost, INQPrePost, SSMIPrePost, SISPrePost, RASTotalScore, INQTotalScore, SSMITotalScore, SISTotalScore)
+datAdultAnalysisJen = data.frame(datAdultDemos, RASTotalScoreF1, RASTotalScoreF2, RASTotalScoreF3, RASTotalScoreF5, INQTotalScoreF1, INQTotalScoreF2, SISTotalScoreF1, SISTotalScoreF2, SSMITotalScore)
 write.csv(datAdultAnalysisJen, "EnhancedDataSet.csv", row.names = FALSE)
 
 
-datAdultAnalysis = data.frame(datAdultDemos,RASTotalScore , INQTotalScore, SSMITotalScore, SISTotalScore)
+datAdultAnalysis = data.frame(datAdultDemos, RASTotalScoreF1, RASTotalScoreF2, RASTotalScoreF3, RASTotalScoreF5, INQTotalScoreF1, INQTotalScoreF2, SISTotalScoreF1, SISTotalScoreF2, SSMITotalScore)
 #Need code gender, race, sexual orientation, edu, employment, RelationshipStatus as binary
 #Gender: 2 = 1, 1 = 0
 #Race: 7 = 0, all else 1
@@ -250,69 +230,139 @@ describe.factor(datAdultAnalysis$RelationshipStatus)
 
 
 # For the complete data set I need to drop SIS, because there is a ton of missing data
+dim(datAdultAnalysis)
+datAdultAnalysis$SISTotalScoreF1 = NULL
+datAdultAnalysis$SISTotalScoreF2 = NULL
 datAdultAnalysisComplete = datAdultAnalysis
-datAdultAnalysisComplete$SISTotalScore = NULL
 datAdultAnalysisComplete = na.omit(datAdultAnalysisComplete)
+dim(datAdultAnalysisComplete)
 
-### Create data for t-tests
+## Getting the percentage of data missing for each variable across
+
+## Calculating how much data is missing
+1-(dim(datAdultAnalysisComplete)[1]/dim(datAdultAnalysis)[1])
+
+### Get number of people at each time point
 datAdultAnalysisCompletePre = subset(datAdultAnalysisComplete, Time == 0) 
 
-head(datAdultAnalysisCompletePre)
+dim(datAdultAnalysisCompletePre)
 
 datAdultAnalysisCompletePost = subset(datAdultAnalysisComplete, Time == 1) 
-head(datAdultAnalysisCompletePost)
+dim(datAdultAnalysisCompletePost)
 datAdultAnalysisCompletePost
 
-datAdultAnalysisCompleteT.test = merge(datAdultAnalysisCompletePre, datAdultAnalysisCompletePost, by = "ID", all.x = TRUE)
-
-datAdultAnalysisCompleteT.testComplete = na.omit(datAdultAnalysisCompleteT.test)
-dim(datAdultAnalysisCompleteT.testComplete)
 
 write.csv(datAdultAnalysis, "EnhancedDataSet.csv", row.names = FALSE)
+
 
 m = 10
 datAdultAnalysisImpute = amelia(m = m, datAdultAnalysis, noms = c("Gender", "Race", "Edu", "SexualOrientation", "RelationshipStatus", "Employment"), idvars = c("ID", "Treatment"), ts = "Time")
 
-compare.density(datAdultAnalysisImpute, var = "RASTotalScore")
-compare.density(datAdultAnalysisImpute, var = "INQTotalScore")
-compare.density(datAdultAnalysisImpute, var = "SSMITotalScore")
-compare.density(datAdultAnalysisImpute, var = "SISTotalScore")
+#compare.density(datAdultAnalysisImpute, var = "RASTotalScore")
+#compare.density(datAdultAnalysisImpute, var = "INQTotalScore")
+#compare.density(datAdultAnalysisImpute, var = "SSMITotalScore")
+#compare.density(datAdultAnalysisImpute, var = "SISTotalScore")
 
 summary(datAdultAnalysisImpute)
 
 datAnalysisAll = lapply(1:m, function(x){datAdultAnalysisImpute$imputations[[x]]})
-```
-Multilevel 
 
-#######
-Check randomization with no imputed, because you 
-```{r}
-randomOutputComplete = multinom(Treatment ~ Age + factor(Gender) + factor(Race)+ factor(SexualOrientation)+ factor(Edu)+ factor(RelationshipStatus)+ factor(Employment), data =  datAdultAnalysisComplete)
-randomOutputComplete = summary(randomOutputComplete)
-coefs1 = randomOutputComplete$coefficients[1,]
-coefs2 = randomOutputComplete$coefficients[2,]  
-ses1 = randomOutputComplete$standard.errors[1,]
-ses2 = randomOutputComplete$standard.errors[2,]
+dim(datAnalysisAll[[1]])
 
-funPvalue  = function(x,y){
-  z_stat = (x/y)
-  pvalue = 2*pnorm(-abs(z_stat))
-  all = list("z_stat" = z_stat, "pvalue" = pvalue)
-  return(all)
+###### Wide vesion here
+datWideAnalysis = NULL
+for(i in 1:m){
+  datWideAnalysis[[i]] = reshape(datAnalysisAll[[i]], v.names = c("RASTotalScoreF1", "RASTotalScoreF2", "RASTotalScoreF3", "RASTotalScoreF5", "INQTotalScoreF1", "INQTotalScoreF2", "SISTotalScoreF1", "SISTotalScoreF2", "SSMITotalScore"),  timevar = "Time", direction = "wide", idvar = "ID")
 }
 
-coefsSes1 = funPvalue(coefs1, ses1)
-coefsSes1
 
-coefsSes2 = funPvalue(coefs2, ses2)
-coefsSes2 
+head(datWideAnalysis[[1]])
+for(i in 1:m){
+  datWideAnalysis[[i]]$RASDiffF1 =datWideAnalysis[[i]]$RASTotalScoreF1.1-datWideAnalysis[[i]]$RASTotalScoreF1.0
+  datWideAnalysis[[i]]$RASDiffF2 =datWideAnalysis[[i]]$RASTotalScoreF2.1-datWideAnalysis[[i]]$RASTotalScoreF2.0
+  datWideAnalysis[[i]]$RASDiffF3 =datWideAnalysis[[i]]$RASTotalScoreF3.1-datWideAnalysis[[i]]$RASTotalScoreF3.0
+  datWideAnalysis[[i]]$RASDiffF5 =datWideAnalysis[[i]]$RASTotalScoreF5.1-datWideAnalysis[[i]]$RASTotalScoreF5.0
+  datWideAnalysis[[i]]$INQDiffF1 =datWideAnalysis[[i]]$INQTotalScoreF1.1-datWideAnalysis[[i]]$INQTotalScoreF1.0  
+  datWideAnalysis[[i]]$INQDiffF2 =datWideAnalysis[[i]]$INQTotalScoreF2.1-datWideAnalysis[[i]]$INQTotalScoreF2.0   
+datWideAnalysis[[i]]$SISDiffF1 =datWideAnalysis[[i]]$SISTotalScoreF1.1-datWideAnalysis[[i]]$SISTotalScoreF1.0
+datWideAnalysis[[i]]$SISDiffF2 =datWideAnalysis[[i]]$SISTotalScoreF2.1-datWideAnalysis[[i]]$SISTotalScoreF2.0 
+  datWideAnalysis[[i]]$SSMIDiff =datWideAnalysis[[i]]$SSMITotalScore.1-datWideAnalysis[[i]]$SSMITotalScore.0
+}
 
+
+
+```
+#####################
+Checking descriptives at each time point
+#####################
+```{r}
+datAdultAnalysisCompleteBase = subset(datAdultAnalysis, Time == 0)
+dim(datAdultAnalysisCompleteBase)
+describe(datAdultAnalysisCompleteBase)
+describe.factor(datAdultAnalysisCompleteBase$Gender)
+describe.factor(datAdultAnalysisCompleteBase$Race)
+describe.factor(datAdultAnalysisCompleteBase$RelationshipStatus)
+describe.factor(datAdultAnalysisCompleteBase$Edu)
+describe.factor(datAdultAnalysisCompleteBase$Employment)
+
+round(apply(datAdultAnalysisCompleteBase, 2, sd, na.rm = TRUE),2)
+
+
+# Post
+datAdultAnalysisCompletePost = subset(datAdultAnalysis, Time == 1)
+describe(datAdultAnalysisCompletePost)
+describe.factor(datAdultAnalysisCompletePost$Gender)
+describe.factor(datAdultAnalysisCompletePost$Race)
+describe.factor(datAdultAnalysisCompletePost$RelationshipStatus)
+describe.factor(datAdultAnalysisCompletePost$Edu)
+describe.factor(datAdultAnalysisCompletePost$Employment)
+
+round(apply(datAdultAnalysisCompletePost, 2, sd, na.rm = TRUE),2)
+
+
+```
+
+
+Here I am checking the randomization. Using three logisitic regression comparing T1 versus T2 across covariates at baseline, then T1 versus T3 and finally T2 versus T3.
+
+There is significant in relationship status between treatment two and three for relationship status.  Single people are more likely to be in treatment two relative to treatement three 
+```{r}
+datAdultRandomT12 = subset(datAdultAnalysisComplete, Time == 0 & Treatment == 1  | Treatment == 2)
+datAdultRandomT12$Treatment = factor(datAdultRandomT12$Treatment)
+datAdultRandomT12$Treatment == ifelse(datAdultRandomT12$Treatment == 1, 1, 0)
+
+modelT12 = glm(Treatment ~  Age + Gender + Race + SexualOrientation + RelationshipStatus + Edu + Employment, data = datAdultRandomT12, family = "binomial")
+
+summary(modelT12)
+
+datAdultRandomT13 = subset(datAdultAnalysisComplete, Time == 0 & Treatment == 1  | Treatment == 3)
+datAdultRandomT13$Treatment = factor(datAdultRandomT13$Treatment)
+datAdultRandomT13$Treatment == ifelse(datAdultRandomT13$Treatment == 1, 1, 0)
+
+
+modelT13 = glm(Treatment ~  Age + Gender + Race + SexualOrientation + RelationshipStatus + Edu + Employment, data = datAdultRandomT13, family = "binomial")
+
+summary(modelT13)
+
+
+datAdultRandomT23 = subset(datAdultAnalysisComplete, Time == 0 & Treatment == 2  | Treatment == 3)
+datAdultRandomT23$Treatment = factor(datAdultRandomT23$Treatment)
+datAdultRandomT23$Treatment == ifelse(datAdultRandomT23$Treatment == 2, 1, 0)
+
+
+modelT23 = glm(Treatment ~  Age + Gender + Race + SexualOrientation + RelationshipStatus + Edu + Employment, data = datAdultRandomT23, family = "binomial")
+
+summary(modelT23)
 ```
 ########################
 Imputed analysese below
 
 Descriptives for base
-```{r}
+```{r, echo=FALSE}
+
+descFun = function(x){
+  x = data.frame(t(x))
+}
 datAnalysisAllDes = lapply(1:m, function(x){subset(datAnalysisAll[[x]], Time == 0)})
 
 
@@ -324,13 +374,9 @@ for(i in 1:m){
 mean.out = NULL
 for(i in 1:m) {
   mean.out[[i]] = apply(datAnalysisAllDes[[i]], 2, mean)
-  mean.out[[i]] = data.frame(mean.out)
+  mean.out = data.frame(mean.out)
 }
 
-
-descFun = function(x){
-  x = data.frame(t(x))
-}
 mean.out = descFun(mean.out)
 
 
@@ -345,14 +391,19 @@ mean.sd.out= mi.meld(mean.out, sd.out)
 mean.sd.out
 ```
 Descriptives for post
-```{r}
+```{r, echo=FALSE}
 
 
+descFun = function(x){
+  x = data.frame(t(x))
+}
 datAnalysisAllDes = lapply(1:m, function(x){subset(datAnalysisAll[[x]], Time == 1)})
+
 
 for(i in 1:m){
   datAnalysisAllDes[[i]]$Treatment= datAnalysisAllDes[[i]]$Treatment =NULL
 }
+
 
 mean.out = NULL
 for(i in 1:m) {
@@ -360,10 +411,6 @@ for(i in 1:m) {
   mean.out = data.frame(mean.out)
 }
 
-
-descFun = function(x){
-  x = data.frame(t(x))
-}
 mean.out = descFun(mean.out)
 
 
@@ -374,7 +421,7 @@ for(i in 1:m) {
   sd.out = data.frame(sd.out)
 }
 sd.out = descFun(sd.out)
-
+mean.sd.out= mi.meld(mean.out, sd.out)
 mean.sd.out= mi.meld(mean.out, sd.out)
 mean.sd.out
 
@@ -395,13 +442,11 @@ for(i in 1:m){
   datAnalysisT3[[i]] = subset(datAnalysisAll[[i]], Treatment == 3)
 }
 
-
-
 ```
 ###############
-RAS Time and T1
+RASF1 Time and T1
 ###############
-```{r}
+```{r, echo=FALSE}
 output = list()
 outputReg = list()
 coef_output =  NULL
@@ -413,7 +458,7 @@ stdSe = NULL
 
 
 for(i in 1:m){
-  output[[i]] = lmer(RASTotalScore ~ Time + (1 | ID), data  = datAnalysisT1[[i]])
+  output[[i]] = lmer(RASTotalScoreF1 ~ Time + (1 | ID), data  = datAnalysisT1[[i]])
   outputReg[[i]] = output[[i]]
   stdBeta[[i]] = std.coef(output[[i]], partial.sd = TRUE) 
   stdCoef[[i]] = stdBeta[[i]][2,1]
@@ -424,7 +469,7 @@ for(i in 1:m){
   se_output[[i]] = output[[i]]$coefficients[,2]
 }
 coef_output = data.frame(coef_output)
-coef_output
+
 quickTrans = function(x){
   x = data.frame(x)
   x = t(x)
@@ -454,11 +499,130 @@ meldAllT_stat = function(x,y){
 
 results = meldAllT_stat(coef_output, se_output)
 round(results,3)
+```
+################
+Cohen's D RAS T1
+################
+```{r}
+datTimeTreat = NULL
+for(i in 1:m){
+datTimeTreat[[i]] = subset(datAnalysisT1[[i]], Treatment == 1) 
+}
+
+library(psych)
+cohenDat = NULL
+RASTotalT0 = NULL
+RASTotalT1 = NULL
+for(i in 1:m){
+RASTotalT0[[i]] = subset(datTimeTreat[[i]], Time == 0)
+RASTotalT1[[i]] = subset(datTimeTreat[[i]], Time == 1)
+cohenDat[[i]] = mean(RASTotalT1[[i]]$RASTotalScoreF1-RASTotalT0[[i]]$RASTotalScoreF1)/sqrt((sd(RASTotalT1[[i]]$RASTotalScoreF1)^2+sd(RASTotalT0[[i]]$RASTotalScoreF1)^2)/2)
+}
+
+
+cohenD = data.frame(cohenDat)
+
+meldAllT_stat = function(x,y){
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
 ```
 ###############
 RAS Time and T2
 ###############
+```{r, echo=FALSE}
+output = list()
+outputReg = list()
+coef_output =  NULL
+se_output = NULL
+rSquared = NULL
+stdBeta = NULL
+stdCoef = NULL
+stdSe = NULL
+
+
+
+for(i in 1:m){
+output[[i]] = lmer(RASTotalScoreF1 ~ Time  + (1 | ID), data  = datAnalysisT2[[i]])
+outputReg[[i]] = output[[i]]
+stdBeta[[i]] = std.coef(output[[i]], partial.sd = TRUE) 
+stdCoef[[i]] = stdBeta[[i]][2,1]
+stdSe[[i]] = stdBeta[[i]][2,2]
+rSquared[[i]] = r.squaredGLMM(output[[i]])
+output[[i]] = summary(output[[i]])
+coef_output[[i]] = output[[i]]$coefficients[,1]
+se_output[[i]] = output[[i]]$coefficients[,2]
+}
+coef_output = data.frame(coef_output)
+
+quickTrans = function(x){
+x = data.frame(x)
+x = t(x)
+x = data.frame(x)
+}
+coef_output = quickTrans(coef_output)
+se_output = quickTrans(se_output)
+
+stdBetaOutput = data.frame(stdCoef)
+stdSeOutput = data.frame(stdSe)
+
+coef_output = data.frame(coef_output, stdBetaOutput)
+se_output = data.frame(se_output, stdSeOutput)
+
+# Figure out the degrees of freedom 
+
+#coefsAll = mi.meld(q = coef_output, se = se_output)
+
+meldAllT_stat = function(x,y){
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+z_stat = coefs1/ses1
+p = 2*pnorm(-abs(z_stat))
+return(data.frame(coefs1, ses1, z_stat, p))
+}
+
+results = meldAllT_stat(coef_output, se_output)
+round(results,3)
+```
+################
+Cohen's D RAS T2
+################
 ```{r}
+datTimeTreat = datAnalysisT2
+
+library(psych)
+cohenDat = NULL
+RASTotalT0 = NULL
+RASTotalT1 = NULL
+for(i in 1:m){
+  RASTotalT0[[i]] = subset(datTimeTreat[[i]], Time == 0)
+  RASTotalT1[[i]] = subset(datTimeTreat[[i]], Time == 1)
+  cohenDat[[i]] = mean(RASTotalT1[[i]]$RASTotalScoreF1-RASTotalT0[[i]]$RASTotalScoreF1)/sqrt((sd(RASTotalT1[[i]]$RASTotalScoreF1)^2+sd(RASTotalT0[[i]]$RASTotalScoreF1)^2)/2)
+}
+
+cohenD = data.frame(cohenDat)
+
+meldAllT_stat = function(x,y){
+  coefsAll = mi.meld(q = x, se = y)
+  coefs1 = t(data.frame(coefsAll$q.mi))
+  ses1 = t(data.frame(coefsAll$se.mi))
+  return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+
+###############
+RAS Time and T3
+###############
+```{r, echo=FALSE}
 output = list()
 outputReg = list()
 coef_output =  NULL
@@ -470,7 +634,7 @@ stdSe = NULL
 
 
 for(i in 1:m){
-  output[[i]] = lmer(RASTotalScore ~ Time + (1 | ID), data  = datAnalysisT2[[i]])
+  output[[i]] = lmer(RASTotalScoreF1 ~ Time + (1 | ID), data  = datAnalysisT3[[i]])
   outputReg[[i]] = output[[i]]
   stdBeta[[i]] = std.coef(output[[i]], partial.sd = TRUE) 
   stdCoef[[i]] = stdBeta[[i]][2,1]
@@ -481,7 +645,89 @@ for(i in 1:m){
   se_output[[i]] = output[[i]]$coefficients[,2]
 }
 coef_output = data.frame(coef_output)
-coef_output
+
+quickTrans = function(x){
+  x = data.frame(x)
+  x = t(x)
+  x = data.frame(x)
+}
+coef_output = quickTrans(coef_output)
+se_output = quickTrans(se_output)
+
+stdBetaOutput = data.frame(stdCoef)
+stdSeOutput = data.frame(stdSe)
+
+coef_output = data.frame(coef_output, stdBetaOutput)
+se_output = data.frame(se_output, stdSeOutput)
+
+
+meldAllT_stat = function(x,y){
+  coefsAll = mi.meld(q = x, se = y)
+  coefs1 = t(data.frame(coefsAll$q.mi))
+  ses1 = t(data.frame(coefsAll$se.mi))
+  z_stat = coefs1/ses1
+  p = 2*pnorm(-abs(z_stat))
+  return(data.frame(coefs1, ses1, z_stat, p))
+}
+
+results = meldAllT_stat(coef_output, se_output)
+round(results,3)
+```
+################
+Cohen's D RAS T3
+################
+```{r}
+datTimeTreat = datAnalysisT3
+
+library(psych)
+cohenDat = NULL
+RASTotalT0 = NULL
+RASTotalT1 = NULL
+for(i in 1:m){
+RASTotalT0[[i]] = subset(datTimeTreat[[i]], Time == 0)
+RASTotalT1[[i]] = subset(datTimeTreat[[i]], Time == 1)
+cohenDat[[i]] = mean(RASTotalT1[[i]]$RASTotalScoreF1-RASTotalT0[[i]]$RASTotalScoreF1)/sqrt((sd(RASTotalT1[[i]]$RASTotalScoreF1)^2+sd(RASTotalT0[[i]]$RASTotalScoreF1)^2)/2)
+}
+
+cohenD = data.frame(cohenDat)
+
+meldAllT_stat = function(x,y){
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+###############
+RASF2 Time and T1
+###############
+```{r, echo=FALSE}
+output = list()
+outputReg = list()
+coef_output =  NULL
+se_output = NULL
+rSquared = NULL
+stdBeta = NULL
+stdCoef = NULL
+stdSe = NULL
+
+
+for(i in 1:m){
+  output[[i]] = lmer(RASTotalScoreF2 ~ Time + (1 | ID), data  = datAnalysisT1[[i]])
+  outputReg[[i]] = output[[i]]
+  stdBeta[[i]] = std.coef(output[[i]], partial.sd = TRUE) 
+  stdCoef[[i]] = stdBeta[[i]][2,1]
+  stdSe[[i]] = stdBeta[[i]][2,2]
+  rSquared[[i]] = r.squaredGLMM(output[[i]])
+  output[[i]] = summary(output[[i]])
+  coef_output[[i]] = output[[i]]$coefficients[,1]
+  se_output[[i]] = output[[i]]$coefficients[,2]
+}
+coef_output = data.frame(coef_output)
+
 quickTrans = function(x){
   x = data.frame(x)
   x = t(x)
@@ -511,11 +757,128 @@ meldAllT_stat = function(x,y){
 
 results = meldAllT_stat(coef_output, se_output)
 round(results,3)
+```
+################
+Cohen's D RAS T1
+################
+```{r}
+datTimeTreat = NULL
+for(i in 1:m){
+datTimeTreat[[i]] = subset(datAnalysisT1[[i]], Treatment == 1) 
+}
+
+library(psych)
+cohenDat = NULL
+RASTotalT0 = NULL
+RASTotalT1 = NULL
+for(i in 1:m){
+RASTotalT0[[i]] = subset(datTimeTreat[[i]], Time == 0)
+RASTotalT1[[i]] = subset(datTimeTreat[[i]], Time == 1)
+cohenDat[[i]] = mean(RASTotalT1[[i]]$RASTotalScoreF2-RASTotalT0[[i]]$RASTotalScoreF2)/sqrt((sd(RASTotalT1[[i]]$RASTotalScoreF2)^2+sd(RASTotalT0[[i]]$RASTotalScoreF2)^2)/2)
+}
+
+
+cohenD = data.frame(cohenDat)
+
+meldAllT_stat = function(x,y){
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+###############
+RAS Time and T2
+###############
+```{r, echo=FALSE}
+output = list()
+outputReg = list()
+coef_output =  NULL
+se_output = NULL
+rSquared = NULL
+stdBeta = NULL
+stdCoef = NULL
+stdSe = NULL
+
+
+for(i in 1:m){
+output[[i]] = lmer(RASTotalScoreF2 ~ Time + (1 | ID), data  = datAnalysisT2[[i]])
+outputReg[[i]] = output[[i]]
+stdBeta[[i]] = std.coef(output[[i]], partial.sd = TRUE) 
+stdCoef[[i]] = stdBeta[[i]][2,1]
+stdSe[[i]] = stdBeta[[i]][2,2]
+rSquared[[i]] = r.squaredGLMM(output[[i]])
+output[[i]] = summary(output[[i]])
+coef_output[[i]] = output[[i]]$coefficients[,1]
+se_output[[i]] = output[[i]]$coefficients[,2]
+}
+coef_output = data.frame(coef_output)
+
+quickTrans = function(x){
+x = data.frame(x)
+x = t(x)
+x = data.frame(x)
+}
+coef_output = quickTrans(coef_output)
+se_output = quickTrans(se_output)
+
+stdBetaOutput = data.frame(stdCoef)
+stdSeOutput = data.frame(stdSe)
+
+coef_output = data.frame(coef_output, stdBetaOutput)
+se_output = data.frame(se_output, stdSeOutput)
+
+# Figure out the degrees of freedom 
+
+#coefsAll = mi.meld(q = coef_output, se = se_output)
+
+meldAllT_stat = function(x,y){
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+z_stat = coefs1/ses1
+p = 2*pnorm(-abs(z_stat))
+return(data.frame(coefs1, ses1, z_stat, p))
+}
+
+results = meldAllT_stat(coef_output, se_output)
+round(results,3)
+```
+################
+Cohen's D RAS T2
+################
+```{r}
+datTimeTreat = datAnalysisT2
+
+library(psych)
+cohenDat = NULL
+RASTotalT0 = NULL
+RASTotalT1 = NULL
+for(i in 1:m){
+  RASTotalT0[[i]] = subset(datTimeTreat[[i]], Time == 0)
+  RASTotalT1[[i]] = subset(datTimeTreat[[i]], Time == 1)
+  cohenDat[[i]] = mean(RASTotalT1[[i]]$RASTotalScoreF2-RASTotalT0[[i]]$RASTotalScoreF2)/sqrt((sd(RASTotalT1[[i]]$RASTotalScoreF2)^2+sd(RASTotalT0[[i]]$RASTotalScoreF2)^2)/2)
+}
+
+cohenD = data.frame(cohenDat)
+
+meldAllT_stat = function(x,y){
+  coefsAll = mi.meld(q = x, se = y)
+  coefs1 = t(data.frame(coefsAll$q.mi))
+  ses1 = t(data.frame(coefsAll$se.mi))
+  return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
 ```
 ###############
 RAS Time and T3
 ###############
-```{r}
+```{r, echo=FALSE}
 output = list()
 outputReg = list()
 coef_output =  NULL
@@ -527,7 +890,7 @@ stdSe = NULL
 
 
 for(i in 1:m){
-  output[[i]] = lmer(RASTotalScore ~ Time + (1 | ID), data  = datAnalysisT3[[i]])
+  output[[i]] = lmer(RASTotalScoreF2 ~ Time + (1 | ID), data  = datAnalysisT3[[i]])
   outputReg[[i]] = output[[i]]
   stdBeta[[i]] = std.coef(output[[i]], partial.sd = TRUE) 
   stdCoef[[i]] = stdBeta[[i]][2,1]
@@ -538,7 +901,7 @@ for(i in 1:m){
   se_output[[i]] = output[[i]]$coefficients[,2]
 }
 coef_output = data.frame(coef_output)
-coef_output
+
 quickTrans = function(x){
   x = data.frame(x)
   x = t(x)
@@ -566,10 +929,38 @@ meldAllT_stat = function(x,y){
 results = meldAllT_stat(coef_output, se_output)
 round(results,3)
 ```
-###############
-INQ Time and T1
-###############
+################
+Cohen's D RAS T3
+################
 ```{r}
+datTimeTreat = datAnalysisT3
+
+library(psych)
+cohenDat = NULL
+RASTotalT0 = NULL
+RASTotalT1 = NULL
+for(i in 1:m){
+RASTotalT0[[i]] = subset(datTimeTreat[[i]], Time == 0)
+RASTotalT1[[i]] = subset(datTimeTreat[[i]], Time == 1)
+cohenDat[[i]] = mean(RASTotalT1[[i]]$RASTotalScoreF2-RASTotalT0[[i]]$RASTotalScoreF2)/sqrt((sd(RASTotalT1[[i]]$RASTotalScoreF2)^2+sd(RASTotalT0[[i]]$RASTotalScoreF2)^2)/2)
+}
+
+cohenD = data.frame(cohenDat)
+
+meldAllT_stat = function(x,y){
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+###############
+RASF3 Time and T1
+###############
+```{r, echo=FALSE}
 output = list()
 outputReg = list()
 coef_output =  NULL
@@ -581,7 +972,7 @@ stdSe = NULL
 
 
 for(i in 1:m){
-  output[[i]] = lmer(INQTotalScore ~ Time + (1 | ID), data  = datAnalysisT1[[i]])
+  output[[i]] = lmer(RASTotalScoreF3 ~ Time + (1 | ID), data  = datAnalysisT1[[i]])
   outputReg[[i]] = output[[i]]
   stdBeta[[i]] = std.coef(output[[i]], partial.sd = TRUE) 
   stdCoef[[i]] = stdBeta[[i]][2,1]
@@ -592,7 +983,7 @@ for(i in 1:m){
   se_output[[i]] = output[[i]]$coefficients[,2]
 }
 coef_output = data.frame(coef_output)
-coef_output
+
 quickTrans = function(x){
   x = data.frame(x)
   x = t(x)
@@ -622,11 +1013,552 @@ meldAllT_stat = function(x,y){
 
 results = meldAllT_stat(coef_output, se_output)
 round(results,3)
+```
+################
+Cohen's D RAS T1
+################
+```{r}
+datTimeTreat = NULL
+for(i in 1:m){
+datTimeTreat[[i]] = subset(datAnalysisT1[[i]], Treatment == 1) 
+}
+
+library(psych)
+cohenDat = NULL
+RASTotalT0 = NULL
+RASTotalT1 = NULL
+for(i in 1:m){
+RASTotalT0[[i]] = subset(datTimeTreat[[i]], Time == 0)
+RASTotalT1[[i]] = subset(datTimeTreat[[i]], Time == 1)
+cohenDat[[i]] = mean(RASTotalT1[[i]]$RASTotalScoreF3-RASTotalT0[[i]]$RASTotalScoreF3)/sqrt((sd(RASTotalT1[[i]]$RASTotalScoreF3)^2+sd(RASTotalT0[[i]]$RASTotalScoreF3)^2)/2)
+}
+
+
+cohenD = data.frame(cohenDat)
+
+meldAllT_stat = function(x,y){
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+###############
+RAS Time and T2
+###############
+```{r, echo=FALSE}
+output = list()
+outputReg = list()
+coef_output =  NULL
+se_output = NULL
+rSquared = NULL
+stdBeta = NULL
+stdCoef = NULL
+stdSe = NULL
+
+
+for(i in 1:m){
+output[[i]] = lmer(RASTotalScoreF3 ~ Time + (1 | ID), data  = datAnalysisT2[[i]])
+outputReg[[i]] = output[[i]]
+stdBeta[[i]] = std.coef(output[[i]], partial.sd = TRUE) 
+stdCoef[[i]] = stdBeta[[i]][2,1]
+stdSe[[i]] = stdBeta[[i]][2,2]
+rSquared[[i]] = r.squaredGLMM(output[[i]])
+output[[i]] = summary(output[[i]])
+coef_output[[i]] = output[[i]]$coefficients[,1]
+se_output[[i]] = output[[i]]$coefficients[,2]
+}
+coef_output = data.frame(coef_output)
+
+quickTrans = function(x){
+x = data.frame(x)
+x = t(x)
+x = data.frame(x)
+}
+coef_output = quickTrans(coef_output)
+se_output = quickTrans(se_output)
+
+stdBetaOutput = data.frame(stdCoef)
+stdSeOutput = data.frame(stdSe)
+
+coef_output = data.frame(coef_output, stdBetaOutput)
+se_output = data.frame(se_output, stdSeOutput)
+
+# Figure out the degrees of freedom 
+
+#coefsAll = mi.meld(q = coef_output, se = se_output)
+
+meldAllT_stat = function(x,y){
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+z_stat = coefs1/ses1
+p = 2*pnorm(-abs(z_stat))
+return(data.frame(coefs1, ses1, z_stat, p))
+}
+
+results = meldAllT_stat(coef_output, se_output)
+round(results,3)
+```
+################
+Cohen's D RAS T2
+################
+```{r}
+datTimeTreat = datAnalysisT2
+
+library(psych)
+cohenDat = NULL
+RASTotalT0 = NULL
+RASTotalT1 = NULL
+for(i in 1:m){
+  RASTotalT0[[i]] = subset(datTimeTreat[[i]], Time == 0)
+  RASTotalT1[[i]] = subset(datTimeTreat[[i]], Time == 1)
+  cohenDat[[i]] = mean(RASTotalT1[[i]]$RASTotalScoreF3-RASTotalT0[[i]]$RASTotalScoreF3)/sqrt((sd(RASTotalT1[[i]]$RASTotalScoreF3)^2+sd(RASTotalT0[[i]]$RASTotalScoreF3)^2)/2)
+}
+
+cohenD = data.frame(cohenDat)
+
+meldAllT_stat = function(x,y){
+  coefsAll = mi.meld(q = x, se = y)
+  coefs1 = t(data.frame(coefsAll$q.mi))
+  ses1 = t(data.frame(coefsAll$se.mi))
+  return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+###############
+RAS Time and T3
+###############
+```{r, echo=FALSE}
+output = list()
+outputReg = list()
+coef_output =  NULL
+se_output = NULL
+rSquared = NULL
+stdBeta = NULL
+stdCoef = NULL
+stdSe = NULL
+
+
+for(i in 1:m){
+  output[[i]] = lmer(RASTotalScoreF3 ~ Time + (1 | ID), data  = datAnalysisT3[[i]])
+  outputReg[[i]] = output[[i]]
+  stdBeta[[i]] = std.coef(output[[i]], partial.sd = TRUE) 
+  stdCoef[[i]] = stdBeta[[i]][2,1]
+  stdSe[[i]] = stdBeta[[i]][2,2]
+  rSquared[[i]] = r.squaredGLMM(output[[i]])
+  output[[i]] = summary(output[[i]])
+  coef_output[[i]] = output[[i]]$coefficients[,1]
+  se_output[[i]] = output[[i]]$coefficients[,2]
+}
+coef_output = data.frame(coef_output)
+
+quickTrans = function(x){
+  x = data.frame(x)
+  x = t(x)
+  x = data.frame(x)
+}
+coef_output = quickTrans(coef_output)
+se_output = quickTrans(se_output)
+
+stdBetaOutput = data.frame(stdCoef)
+stdSeOutput = data.frame(stdSe)
+
+coef_output = data.frame(coef_output, stdBetaOutput)
+se_output = data.frame(se_output, stdSeOutput)
+
+
+meldAllT_stat = function(x,y){
+  coefsAll = mi.meld(q = x, se = y)
+  coefs1 = t(data.frame(coefsAll$q.mi))
+  ses1 = t(data.frame(coefsAll$se.mi))
+  z_stat = coefs1/ses1
+  p = 2*pnorm(-abs(z_stat))
+  return(data.frame(coefs1, ses1, z_stat, p))
+}
+
+results = meldAllT_stat(coef_output, se_output)
+round(results,3)
+```
+################
+Cohen's D RAS T3
+################
+```{r}
+datTimeTreat = datAnalysisT3
+
+library(psych)
+cohenDat = NULL
+RASTotalT0 = NULL
+RASTotalT1 = NULL
+for(i in 1:m){
+RASTotalT0[[i]] = subset(datTimeTreat[[i]], Time == 0)
+RASTotalT1[[i]] = subset(datTimeTreat[[i]], Time == 1)
+cohenDat[[i]] = mean(RASTotalT1[[i]]$RASTotalScoreF3-RASTotalT0[[i]]$RASTotalScoreF3)/sqrt((sd(RASTotalT1[[i]]$RASTotalScoreF3)^2+sd(RASTotalT0[[i]]$RASTotalScoreF3)^2)/2)
+}
+
+cohenD = data.frame(cohenDat)
+
+meldAllT_stat = function(x,y){
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+###############
+RASF5 Time and T1
+###############
+```{r, echo=FALSE}
+output = list()
+outputReg = list()
+coef_output =  NULL
+se_output = NULL
+rSquared = NULL
+stdBeta = NULL
+stdCoef = NULL
+stdSe = NULL
+
+
+for(i in 1:m){
+  output[[i]] = lmer(RASTotalScoreF5 ~ Time + (1 | ID), data  = datAnalysisT1[[i]])
+  outputReg[[i]] = output[[i]]
+  stdBeta[[i]] = std.coef(output[[i]], partial.sd = TRUE) 
+  stdCoef[[i]] = stdBeta[[i]][2,1]
+  stdSe[[i]] = stdBeta[[i]][2,2]
+  rSquared[[i]] = r.squaredGLMM(output[[i]])
+  output[[i]] = summary(output[[i]])
+  coef_output[[i]] = output[[i]]$coefficients[,1]
+  se_output[[i]] = output[[i]]$coefficients[,2]
+}
+coef_output = data.frame(coef_output)
+
+quickTrans = function(x){
+  x = data.frame(x)
+  x = t(x)
+  x = data.frame(x)
+}
+coef_output = quickTrans(coef_output)
+se_output = quickTrans(se_output)
+
+stdBetaOutput = data.frame(stdCoef)
+stdSeOutput = data.frame(stdSe)
+
+coef_output = data.frame(coef_output, stdBetaOutput)
+se_output = data.frame(se_output, stdSeOutput)
+
+# Figure out the degrees of freedom 
+
+#coefsAll = mi.meld(q = coef_output, se = se_output)
+
+meldAllT_stat = function(x,y){
+  coefsAll = mi.meld(q = x, se = y)
+  coefs1 = t(data.frame(coefsAll$q.mi))
+  ses1 = t(data.frame(coefsAll$se.mi))
+  z_stat = coefs1/ses1
+  p = 2*pnorm(-abs(z_stat))
+  return(data.frame(coefs1, ses1, z_stat, p))
+}
+
+results = meldAllT_stat(coef_output, se_output)
+round(results,3)
+```
+################
+Cohen's D RAS T1
+################
+```{r}
+datTimeTreat = NULL
+for(i in 1:m){
+datTimeTreat[[i]] = subset(datAnalysisT1[[i]], Treatment == 1) 
+}
+
+library(psych)
+cohenDat = NULL
+RASTotalT0 = NULL
+RASTotalT1 = NULL
+for(i in 1:m){
+RASTotalT0[[i]] = subset(datTimeTreat[[i]], Time == 0)
+RASTotalT1[[i]] = subset(datTimeTreat[[i]], Time == 1)
+cohenDat[[i]] = mean(RASTotalT1[[i]]$RASTotalScoreF5-RASTotalT0[[i]]$RASTotalScoreF5)/sqrt((sd(RASTotalT1[[i]]$RASTotalScoreF5)^2+sd(RASTotalT0[[i]]$RASTotalScoreF5)^2)/2)
+}
+
+
+cohenD = data.frame(cohenDat)
+
+meldAllT_stat = function(x,y){
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+###############
+RAS Time and T2
+###############
+```{r, echo=FALSE}
+output = list()
+outputReg = list()
+coef_output =  NULL
+se_output = NULL
+rSquared = NULL
+stdBeta = NULL
+stdCoef = NULL
+stdSe = NULL
+
+
+for(i in 1:m){
+output[[i]] = lmer(RASTotalScoreF5 ~ Time + (1 | ID), data  = datAnalysisT2[[i]])
+outputReg[[i]] = output[[i]]
+stdBeta[[i]] = std.coef(output[[i]], partial.sd = TRUE) 
+stdCoef[[i]] = stdBeta[[i]][2,1]
+stdSe[[i]] = stdBeta[[i]][2,2]
+rSquared[[i]] = r.squaredGLMM(output[[i]])
+output[[i]] = summary(output[[i]])
+coef_output[[i]] = output[[i]]$coefficients[,1]
+se_output[[i]] = output[[i]]$coefficients[,2]
+}
+coef_output = data.frame(coef_output)
+
+quickTrans = function(x){
+x = data.frame(x)
+x = t(x)
+x = data.frame(x)
+}
+coef_output = quickTrans(coef_output)
+se_output = quickTrans(se_output)
+
+stdBetaOutput = data.frame(stdCoef)
+stdSeOutput = data.frame(stdSe)
+
+coef_output = data.frame(coef_output, stdBetaOutput)
+se_output = data.frame(se_output, stdSeOutput)
+
+# Figure out the degrees of freedom 
+
+#coefsAll = mi.meld(q = coef_output, se = se_output)
+
+meldAllT_stat = function(x,y){
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+z_stat = coefs1/ses1
+p = 2*pnorm(-abs(z_stat))
+return(data.frame(coefs1, ses1, z_stat, p))
+}
+
+results = meldAllT_stat(coef_output, se_output)
+round(results,3)
+```
+################
+Cohen's D RAS T2
+################
+```{r}
+datTimeTreat = datAnalysisT2
+
+library(psych)
+cohenDat = NULL
+RASTotalT0 = NULL
+RASTotalT1 = NULL
+for(i in 1:m){
+  RASTotalT0[[i]] = subset(datTimeTreat[[i]], Time == 0)
+  RASTotalT1[[i]] = subset(datTimeTreat[[i]], Time == 1)
+  cohenDat[[i]] = mean(RASTotalT1[[i]]$RASTotalScoreF5-RASTotalT0[[i]]$RASTotalScoreF5)/sqrt((sd(RASTotalT1[[i]]$RASTotalScoreF5)^2+sd(RASTotalT0[[i]]$RASTotalScoreF5)^2)/2)
+}
+
+cohenD = data.frame(cohenDat)
+
+meldAllT_stat = function(x,y){
+  coefsAll = mi.meld(q = x, se = y)
+  coefs1 = t(data.frame(coefsAll$q.mi))
+  ses1 = t(data.frame(coefsAll$se.mi))
+  return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+###############
+RAS Time and T3
+###############
+```{r, echo=FALSE}
+output = list()
+outputReg = list()
+coef_output =  NULL
+se_output = NULL
+rSquared = NULL
+stdBeta = NULL
+stdCoef = NULL
+stdSe = NULL
+
+
+for(i in 1:m){
+  output[[i]] = lmer(RASTotalScoreF5 ~ Time + (1 | ID), data  = datAnalysisT3[[i]])
+  outputReg[[i]] = output[[i]]
+  stdBeta[[i]] = std.coef(output[[i]], partial.sd = TRUE) 
+  stdCoef[[i]] = stdBeta[[i]][2,1]
+  stdSe[[i]] = stdBeta[[i]][2,2]
+  rSquared[[i]] = r.squaredGLMM(output[[i]])
+  output[[i]] = summary(output[[i]])
+  coef_output[[i]] = output[[i]]$coefficients[,1]
+  se_output[[i]] = output[[i]]$coefficients[,2]
+}
+coef_output = data.frame(coef_output)
+
+quickTrans = function(x){
+  x = data.frame(x)
+  x = t(x)
+  x = data.frame(x)
+}
+coef_output = quickTrans(coef_output)
+se_output = quickTrans(se_output)
+
+stdBetaOutput = data.frame(stdCoef)
+stdSeOutput = data.frame(stdSe)
+
+coef_output = data.frame(coef_output, stdBetaOutput)
+se_output = data.frame(se_output, stdSeOutput)
+
+
+meldAllT_stat = function(x,y){
+  coefsAll = mi.meld(q = x, se = y)
+  coefs1 = t(data.frame(coefsAll$q.mi))
+  ses1 = t(data.frame(coefsAll$se.mi))
+  z_stat = coefs1/ses1
+  p = 2*pnorm(-abs(z_stat))
+  return(data.frame(coefs1, ses1, z_stat, p))
+}
+
+results = meldAllT_stat(coef_output, se_output)
+round(results,3)
+```
+################
+Cohen's D RAS T3
+################
+```{r}
+datTimeTreat = datAnalysisT3
+
+library(psych)
+cohenDat = NULL
+RASTotalT0 = NULL
+RASTotalT1 = NULL
+for(i in 1:m){
+RASTotalT0[[i]] = subset(datTimeTreat[[i]], Time == 0)
+RASTotalT1[[i]] = subset(datTimeTreat[[i]], Time == 1)
+cohenDat[[i]] = mean(RASTotalT1[[i]]$RASTotalScoreF5-RASTotalT0[[i]]$RASTotalScoreF5)/sqrt((sd(RASTotalT1[[i]]$RASTotalScoreF5)^2+sd(RASTotalT0[[i]]$RASTotalScoreF5)^2)/2)
+}
+
+cohenD = data.frame(cohenDat)
+
+meldAllT_stat = function(x,y){
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+
+###############
+INQF1 Time and T1
+###############
+```{r, echo=FALSE}
+output = list()
+outputReg = list()
+coef_output =  NULL
+se_output = NULL
+rSquared = NULL
+stdBeta = NULL
+stdCoef = NULL
+stdSe = NULL
+
+
+for(i in 1:m){
+  output[[i]] = lmer(INQTotalScoreF1 ~ Time + (1 | ID), data  = datAnalysisT1[[i]])
+  outputReg[[i]] = output[[i]]
+  stdBeta[[i]] = std.coef(output[[i]], partial.sd = TRUE) 
+  stdCoef[[i]] = stdBeta[[i]][2,1]
+  stdSe[[i]] = stdBeta[[i]][2,2]
+  rSquared[[i]] = r.squaredGLMM(output[[i]])
+  output[[i]] = summary(output[[i]])
+  coef_output[[i]] = output[[i]]$coefficients[,1]
+  se_output[[i]] = output[[i]]$coefficients[,2]
+}
+coef_output = data.frame(coef_output)
+
+quickTrans = function(x){
+  x = data.frame(x)
+  x = t(x)
+  x = data.frame(x)
+}
+coef_output = quickTrans(coef_output)
+se_output = quickTrans(se_output)
+
+stdBetaOutput = data.frame(stdCoef)
+stdSeOutput = data.frame(stdSe)
+
+coef_output = data.frame(coef_output, stdBetaOutput)
+se_output = data.frame(se_output, stdSeOutput)
+
+# Figure out the degrees of freedom 
+
+#coefsAll = mi.meld(q = coef_output, se = se_output)
+
+meldAllT_stat = function(x,y){
+  coefsAll = mi.meld(q = x, se = y)
+  coefs1 = t(data.frame(coefsAll$q.mi))
+  ses1 = t(data.frame(coefsAll$se.mi))
+  z_stat = coefs1/ses1
+  p = 2*pnorm(-abs(z_stat))
+  return(data.frame(coefs1, ses1, z_stat, p))
+}
+
+results = meldAllT_stat(coef_output, se_output)
+round(results,3)
+```
+################
+Cohen's D INQ T1
+################
+```{r}
+datTimeTreat = datAnalysisT1
+
+library(psych)
+cohenDat = NULL
+INQTotalT0 = NULL
+INQTotalT1 = NULL
+for(i in 1:m){
+INQTotalT0[[i]] = subset(datTimeTreat[[i]], Time == 0)
+INQTotalT1[[i]] = subset(datTimeTreat[[i]], Time == 1)
+cohenDat[[i]] = mean(INQTotalT1[[i]]$INQTotalScoreF1-INQTotalT0[[i]]$INQTotalScoreF1)/sqrt((sd(INQTotalT1[[i]]$INQTotalScoreF1)^2+sd(INQTotalT0[[i]]$INQTotalScoreF1)^2)/2)
+}
+
+cohenD = data.frame(cohenDat)
+
+meldAllT_stat = function(x,y){
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
 ```
 ###############
 INQ Time and T2
 ###############
-```{r}
+```{r, echo=FALSE}
 output = list()
 outputReg = list()
 coef_output =  NULL
@@ -638,7 +1570,92 @@ stdSe = NULL
 
 
 for(i in 1:m){
-  output[[i]] = lmer(INQTotalScore ~ Time + (1 | ID), data  = datAnalysisT2[[i]])
+output[[i]] = lmer(INQTotalScoreF1 ~ Time + (1 | ID), data  = datAnalysisT2[[i]])
+outputReg[[i]] = output[[i]]
+stdBeta[[i]] = std.coef(output[[i]], partial.sd = TRUE) 
+stdCoef[[i]] = stdBeta[[i]][2,1]
+stdSe[[i]] = stdBeta[[i]][2,2]
+rSquared[[i]] = r.squaredGLMM(output[[i]])
+output[[i]] = summary(output[[i]])
+coef_output[[i]] = output[[i]]$coefficients[,1]
+se_output[[i]] = output[[i]]$coefficients[,2]
+}
+coef_output = data.frame(coef_output)
+
+quickTrans = function(x){
+x = data.frame(x)
+x = t(x)
+x = data.frame(x)
+}
+coef_output = quickTrans(coef_output)
+se_output = quickTrans(se_output)
+
+stdBetaOutput = data.frame(stdCoef)
+stdSeOutput = data.frame(stdSe)
+
+coef_output = data.frame(coef_output, stdBetaOutput)
+se_output = data.frame(se_output, stdSeOutput)
+
+# Figure out the degrees of freedom 
+
+#coefsAll = mi.meld(q = coef_output, se = se_output)
+
+meldAllT_stat = function(x,y){
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+z_stat = coefs1/ses1
+p = 2*pnorm(-abs(z_stat))
+return(data.frame(coefs1, ses1, z_stat, p))
+}
+
+results = meldAllT_stat(coef_output, se_output)
+round(results,3)
+```
+################
+Cohen's D INQ T2
+################
+```{r}
+datTimeTreat = datAnalysisT2
+
+library(psych)
+cohenDat = NULL
+INQTotalT0 = NULL
+INQTotalT1 = NULL
+for(i in 1:m){
+  INQTotalT0[[i]] = subset(datTimeTreat[[i]], Time == 0)
+  INQTotalT1[[i]] = subset(datTimeTreat[[i]], Time == 1)
+  cohenDat[[i]] = mean(INQTotalT1[[i]]$INQTotalScoreF1-INQTotalT0[[i]]$INQTotalScoreF1)/sqrt((sd(INQTotalT1[[i]]$INQTotalScoreF1)^2+sd(INQTotalT0[[i]]$INQTotalScoreF1)^2)/2)
+}
+
+cohenD = data.frame(cohenDat)
+
+meldAllT_stat = function(x,y){
+  coefsAll = mi.meld(q = x, se = y)
+  coefs1 = t(data.frame(coefsAll$q.mi))
+  ses1 = t(data.frame(coefsAll$se.mi))
+  return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+###############
+INQF2 Time and T1
+###############
+```{r, echo=FALSE}
+output = list()
+outputReg = list()
+coef_output =  NULL
+se_output = NULL
+rSquared = NULL
+stdBeta = NULL
+stdCoef = NULL
+stdSe = NULL
+
+
+for(i in 1:m){
+  output[[i]] = lmer(INQTotalScoreF2 ~ Time + (1 | ID), data  = datAnalysisT1[[i]])
   outputReg[[i]] = output[[i]]
   stdBeta[[i]] = std.coef(output[[i]], partial.sd = TRUE) 
   stdCoef[[i]] = stdBeta[[i]][2,1]
@@ -649,7 +1666,7 @@ for(i in 1:m){
   se_output[[i]] = output[[i]]$coefficients[,2]
 }
 coef_output = data.frame(coef_output)
-coef_output
+
 quickTrans = function(x){
   x = data.frame(x)
   x = t(x)
@@ -680,10 +1697,124 @@ meldAllT_stat = function(x,y){
 results = meldAllT_stat(coef_output, se_output)
 round(results,3)
 ```
+################
+Cohen's D INQ T1
+################
+```{r}
+datTimeTreat = datAnalysisT1
+
+library(psych)
+cohenDat = NULL
+INQTotalT0 = NULL
+INQTotalT1 = NULL
+for(i in 1:m){
+INQTotalT0[[i]] = subset(datTimeTreat[[i]], Time == 0)
+INQTotalT1[[i]] = subset(datTimeTreat[[i]], Time == 1)
+cohenDat[[i]] = mean(INQTotalT1[[i]]$INQTotalScoreF2-INQTotalT0[[i]]$INQTotalScoreF2)/sqrt((sd(INQTotalT1[[i]]$INQTotalScoreF2)^2+sd(INQTotalT0[[i]]$INQTotalScoreF2)^2)/2)
+}
+
+cohenD = data.frame(cohenDat)
+
+meldAllT_stat = function(x,y){
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+###############
+INQ Time and T2
+###############
+```{r, echo=FALSE}
+output = list()
+outputReg = list()
+coef_output =  NULL
+se_output = NULL
+rSquared = NULL
+stdBeta = NULL
+stdCoef = NULL
+stdSe = NULL
+
+
+for(i in 1:m){
+output[[i]] = lmer(INQTotalScoreF2 ~ Time + (1 | ID), data  = datAnalysisT2[[i]])
+outputReg[[i]] = output[[i]]
+stdBeta[[i]] = std.coef(output[[i]], partial.sd = TRUE) 
+stdCoef[[i]] = stdBeta[[i]][2,1]
+stdSe[[i]] = stdBeta[[i]][2,2]
+rSquared[[i]] = r.squaredGLMM(output[[i]])
+output[[i]] = summary(output[[i]])
+coef_output[[i]] = output[[i]]$coefficients[,1]
+se_output[[i]] = output[[i]]$coefficients[,2]
+}
+coef_output = data.frame(coef_output)
+
+quickTrans = function(x){
+x = data.frame(x)
+x = t(x)
+x = data.frame(x)
+}
+coef_output = quickTrans(coef_output)
+se_output = quickTrans(se_output)
+
+stdBetaOutput = data.frame(stdCoef)
+stdSeOutput = data.frame(stdSe)
+
+coef_output = data.frame(coef_output, stdBetaOutput)
+se_output = data.frame(se_output, stdSeOutput)
+
+# Figure out the degrees of freedom 
+
+#coefsAll = mi.meld(q = coef_output, se = se_output)
+
+meldAllT_stat = function(x,y){
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+z_stat = coefs1/ses1
+p = 2*pnorm(-abs(z_stat))
+return(data.frame(coefs1, ses1, z_stat, p))
+}
+
+results = meldAllT_stat(coef_output, se_output)
+round(results,3)
+```
+################
+Cohen's D INQ T2
+################
+```{r}
+datTimeTreat = datAnalysisT2
+
+library(psych)
+cohenDat = NULL
+INQTotalT0 = NULL
+INQTotalT1 = NULL
+for(i in 1:m){
+  INQTotalT0[[i]] = subset(datTimeTreat[[i]], Time == 0)
+  INQTotalT1[[i]] = subset(datTimeTreat[[i]], Time == 1)
+  cohenDat[[i]] = mean(INQTotalT1[[i]]$INQTotalScoreF2-INQTotalT0[[i]]$INQTotalScoreF2)/sqrt((sd(INQTotalT1[[i]]$INQTotalScoreF2)^2+sd(INQTotalT0[[i]]$INQTotalScoreF2)^2)/2)
+}
+
+cohenD = data.frame(cohenDat)
+
+meldAllT_stat = function(x,y){
+  coefsAll = mi.meld(q = x, se = y)
+  coefs1 = t(data.frame(coefsAll$q.mi))
+  ses1 = t(data.frame(coefsAll$se.mi))
+  return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+
 ###############
 INQ Time and T3
 ###############
-```{r}
+```{r, echo=FALSE}
 output = list()
 outputReg = list()
 coef_output =  NULL
@@ -695,7 +1826,7 @@ stdSe = NULL
 
 
 for(i in 1:m){
-  output[[i]] = lmer(INQTotalScore ~ Time + (1 | ID), data  = datAnalysisT3[[i]])
+  output[[i]] = lmer(INQTotalScoreF2 ~ Time + (1 | ID), data  = datAnalysisT3[[i]])
   outputReg[[i]] = output[[i]]
   stdBeta[[i]] = std.coef(output[[i]], partial.sd = TRUE) 
   stdCoef[[i]] = stdBeta[[i]][2,1]
@@ -706,7 +1837,7 @@ for(i in 1:m){
   se_output[[i]] = output[[i]]$coefficients[,2]
 }
 coef_output = data.frame(coef_output)
-coef_output
+
 quickTrans = function(x){
   x = data.frame(x)
   x = t(x)
@@ -737,10 +1868,42 @@ meldAllT_stat = function(x,y){
 results = meldAllT_stat(coef_output, se_output)
 round(results,3)
 ```
+################
+Cohen's D INQ T3
+################
+```{r}
+datTimeTreat = datAnalysisT3
+
+library(psych)
+cohenDat = NULL
+INQTotalT0 = NULL
+INQTotalT1 = NULL
+for(i in 1:m){
+INQTotalT0[[i]] = subset(datTimeTreat[[i]], Time == 0)
+INQTotalT1[[i]] = subset(datTimeTreat[[i]], Time == 1)
+cohenDat[[i]] = mean(INQTotalT1[[i]]$INQTotalScoreF2-INQTotalT0[[i]]$INQTotalScoreF2)/sqrt((sd(INQTotalT1[[i]]$INQTotalScoreF2)^2+sd(INQTotalT0[[i]]$INQTotalScoreF2)^2)/2)
+}
+
+cohenD = data.frame(cohenDat)
+
+meldAllT_stat = function(x,y){
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+
+
+
+
 ###############
 SSMI Time and T1
 ###############
-```{r}
+```{r, echo=FALSE}
 output = list()
 outputReg = list()
 coef_output =  NULL
@@ -763,7 +1926,7 @@ for(i in 1:m){
   se_output[[i]] = output[[i]]$coefficients[,2]
 }
 coef_output = data.frame(coef_output)
-coef_output
+
 quickTrans = function(x){
   x = data.frame(x)
   x = t(x)
@@ -794,10 +1957,39 @@ meldAllT_stat = function(x,y){
 results = meldAllT_stat(coef_output, se_output)
 round(results,3)
 ```
+################
+Cohen's D SSMI T1
+################
+```{r}
+datTimeTreat = datAnalysisT1
+
+library(psych)
+cohenDat = NULL
+SSMITotalT0 = NULL
+SSMITotalT1 = NULL
+for(i in 1:m){
+SSMITotalT0[[i]] = subset(datTimeTreat[[i]], Time == 0)
+SSMITotalT1[[i]] = subset(datTimeTreat[[i]], Time == 1)
+cohenDat[[i]] = mean(SSMITotalT1[[i]]$SSMITotal-SSMITotalT0[[i]]$SSMITotal)/sqrt((sd(SSMITotalT1[[i]]$SSMITotal)^2+sd(SSMITotalT0[[i]]$SSMITotal)^2)/2)
+}
+
+cohenD = data.frame(cohenDat)
+
+meldAllT_stat = function(x,y){
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+
 ###############
 SSMI Time and T2
 ###############
-```{r}
+```{r, echo=FALSE}
 output = list()
 outputReg = list()
 coef_output =  NULL
@@ -820,7 +2012,7 @@ for(i in 1:m){
   se_output[[i]] = output[[i]]$coefficients[,2]
 }
 coef_output = data.frame(coef_output)
-coef_output
+
 quickTrans = function(x){
   x = data.frame(x)
   x = t(x)
@@ -851,10 +2043,39 @@ meldAllT_stat = function(x,y){
 results = meldAllT_stat(coef_output, se_output)
 round(results,3)
 ```
+################
+Cohen's D SSMI T2
+################
+```{r}
+datTimeTreat = datAnalysisT2
+
+library(psych)
+cohenDat = NULL
+SSMITotalT0 = NULL
+SSMITotalT1 = NULL
+for(i in 1:m){
+SSMITotalT0[[i]] = subset(datTimeTreat[[i]], Time == 0)
+SSMITotalT1[[i]] = subset(datTimeTreat[[i]], Time == 1)
+cohenDat[[i]] = mean(SSMITotalT1[[i]]$SSMITotal-SSMITotalT0[[i]]$SSMITotal)/sqrt((sd(SSMITotalT1[[i]]$SSMITotal)^2+sd(SSMITotalT0[[i]]$SSMITotal)^2)/2)
+}
+
+cohenD = data.frame(cohenDat)
+
+meldAllT_stat = function(x,y){
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+
 ###############
 SSMI Time and T3
 ###############
-```{r}
+```{r, echo=FALSE}
 output = list()
 outputReg = list()
 coef_output =  NULL
@@ -877,7 +2098,7 @@ for(i in 1:m){
   se_output[[i]] = output[[i]]$coefficients[,2]
 }
 coef_output = data.frame(coef_output)
-coef_output
+
 quickTrans = function(x){
   x = data.frame(x)
   x = t(x)
@@ -908,10 +2129,38 @@ meldAllT_stat = function(x,y){
 results = meldAllT_stat(coef_output, se_output)
 round(results,3)
 ```
-###############
-SIS Time and T1
-###############
+################
+Cohen's D SSMI T3
+################
 ```{r}
+datTimeTreat = datAnalysisT3
+
+library(psych)
+cohenDat = NULL
+SSMITotalT0 = NULL
+SSMITotalT1 = NULL
+for(i in 1:m){
+SSMITotalT0[[i]] = subset(datTimeTreat[[i]], Time == 0)
+SSMITotalT1[[i]] = subset(datTimeTreat[[i]], Time == 1)
+cohenDat[[i]] = mean(SSMITotalT1[[i]]$SSMITotal-SSMITotalT0[[i]]$SSMITotal)/sqrt((sd(SSMITotalT1[[i]]$SSMITotal)^2+sd(SSMITotalT0[[i]]$SSMITotal)^2)/2)
+}
+
+cohenD = data.frame(cohenDat)
+
+meldAllT_stat = function(x,y){
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+###############
+SISF1 Time and T1
+###############
+```{r, echo=FALSE}
 output = list()
 outputReg = list()
 coef_output =  NULL
@@ -923,7 +2172,7 @@ stdSe = NULL
 
 
 for(i in 1:m){
-  output[[i]] = lmer(SISTotalScore ~ Time + (1 | ID), data  = datAnalysisT1[[i]])
+  output[[i]] = lmer(SISTotalScoreF1 ~ Time + (1 | ID), data  = datAnalysisT1[[i]])
   outputReg[[i]] = output[[i]]
   stdBeta[[i]] = std.coef(output[[i]], partial.sd = TRUE) 
   stdCoef[[i]] = stdBeta[[i]][2,1]
@@ -934,7 +2183,7 @@ for(i in 1:m){
   se_output[[i]] = output[[i]]$coefficients[,2]
 }
 coef_output = data.frame(coef_output)
-coef_output
+
 quickTrans = function(x){
   x = data.frame(x)
   x = t(x)
@@ -965,10 +2214,39 @@ meldAllT_stat = function(x,y){
 results = meldAllT_stat(coef_output, se_output)
 round(results,3)
 ```
-###############
-SIS Time and T2
-###############
+################
+Cohen's D SIS T1
+################
 ```{r}
+datTimeTreat = datAnalysisT1
+
+library(psych)
+cohenDat = NULL
+SISTotalT0 = NULL
+SISTotalT1 = NULL
+for(i in 1:m){
+SISTotalT0[[i]] = subset(datTimeTreat[[i]], Time == 0)
+SISTotalT1[[i]] = subset(datTimeTreat[[i]], Time == 1)
+cohenDat[[i]] = mean(SISTotalT1[[i]]$SISTotalScoreF1-SISTotalT0[[i]]$SISTotalScoreF1)/sqrt((sd(SISTotalT1[[i]]$SISTotalScoreF1)^2+sd(SISTotalT0[[i]]$SISTotalScoreF1)^2)/2)
+}
+
+cohenD = data.frame(cohenDat)
+
+meldAllT_stat = function(x,y){
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+
+###############
+SISF1 Time and T2
+###############
+```{r, echo=FALSE}
 output = list()
 outputReg = list()
 coef_output =  NULL
@@ -980,22 +2258,22 @@ stdSe = NULL
 
 
 for(i in 1:m){
-  output[[i]] = lmer(SISTotalScore ~ Time + (1 | ID), data  = datAnalysisT2[[i]])
-  outputReg[[i]] = output[[i]]
-  stdBeta[[i]] = std.coef(output[[i]], partial.sd = TRUE) 
-  stdCoef[[i]] = stdBeta[[i]][2,1]
-  stdSe[[i]] = stdBeta[[i]][2,2]
-  rSquared[[i]] = r.squaredGLMM(output[[i]])
-  output[[i]] = summary(output[[i]])
-  coef_output[[i]] = output[[i]]$coefficients[,1]
-  se_output[[i]] = output[[i]]$coefficients[,2]
+output[[i]] = lmer(SISTotalScoreF1 ~ Time + (1 | ID), data  = datAnalysisT2[[i]])
+outputReg[[i]] = output[[i]]
+stdBeta[[i]] = std.coef(output[[i]], partial.sd = TRUE) 
+stdCoef[[i]] = stdBeta[[i]][2,1]
+stdSe[[i]] = stdBeta[[i]][2,2]
+rSquared[[i]] = r.squaredGLMM(output[[i]])
+output[[i]] = summary(output[[i]])
+coef_output[[i]] = output[[i]]$coefficients[,1]
+se_output[[i]] = output[[i]]$coefficients[,2]
 }
 coef_output = data.frame(coef_output)
-coef_output
+
 quickTrans = function(x){
-  x = data.frame(x)
-  x = t(x)
-  x = data.frame(x)
+x = data.frame(x)
+x = t(x)
+x = data.frame(x)
 }
 coef_output = quickTrans(coef_output)
 se_output = quickTrans(se_output)
@@ -1011,21 +2289,50 @@ se_output = data.frame(se_output, stdSeOutput)
 #coefsAll = mi.meld(q = coef_output, se = se_output)
 
 meldAllT_stat = function(x,y){
-  coefsAll = mi.meld(q = x, se = y)
-  coefs1 = t(data.frame(coefsAll$q.mi))
-  ses1 = t(data.frame(coefsAll$se.mi))
-  z_stat = coefs1/ses1
-  p = 2*pnorm(-abs(z_stat))
-  return(data.frame(coefs1, ses1, z_stat, p))
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+z_stat = coefs1/ses1
+p = 2*pnorm(-abs(z_stat))
+return(data.frame(coefs1, ses1, z_stat, p))
 }
 
 results = meldAllT_stat(coef_output, se_output)
 round(results,3)
 ```
+################
+Cohen's D SIS T2
+################
+```{r}
+datTimeTreat = datAnalysisT2
+
+library(psych)
+cohenDat = NULL
+SISTotalT0 = NULL
+SISTotalT1 = NULL
+for(i in 1:m){
+  SISTotalT0[[i]] = subset(datTimeTreat[[i]], Time == 0)
+  SISTotalT1[[i]] = subset(datTimeTreat[[i]], Time == 1)
+  cohenDat[[i]] = mean(SISTotalT1[[i]]$SISTotalScoreF1-SISTotalT0[[i]]$SISTotalScoreF1)/sqrt((sd(SISTotalT1[[i]]$SISTotalScoreF1)^2+sd(SISTotalT0[[i]]$SISTotalScoreF1)^2)/2)
+}
+
+cohenD = data.frame(cohenDat)
+
+meldAllT_stat = function(x,y){
+  coefsAll = mi.meld(q = x, se = y)
+  coefs1 = t(data.frame(coefsAll$q.mi))
+  ses1 = t(data.frame(coefsAll$se.mi))
+  return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+
 ###############
 SIS Time and T3
 ###############
-```{r}
+```{r, echo=FALSE}
 output = list()
 outputReg = list()
 coef_output =  NULL
@@ -1037,7 +2344,7 @@ stdSe = NULL
 
 
 for(i in 1:m){
-  output[[i]] = lmer(SISTotalScore ~ Time + (1 | ID), data  = datAnalysisT3[[i]])
+  output[[i]] = lmer(SISTotalScoreF1 ~ Time + (1 | ID), data  = datAnalysisT3[[i]])
   outputReg[[i]] = output[[i]]
   stdBeta[[i]] = std.coef(output[[i]], partial.sd = TRUE) 
   stdCoef[[i]] = stdBeta[[i]][2,1]
@@ -1048,7 +2355,92 @@ for(i in 1:m){
   se_output[[i]] = output[[i]]$coefficients[,2]
 }
 coef_output = data.frame(coef_output)
-coef_output
+
+quickTrans = function(x){
+  x = data.frame(x)
+  x = t(x)
+  x = data.frame(x)
+}
+coef_output = quickTrans(coef_output)
+se_output = quickTrans(se_output)
+
+stdBetaOutput = data.frame(stdCoef)
+stdSeOutput = data.frame(stdSe)
+
+coef_output = data.frame(coef_output, stdBetaOutput)
+se_output = data.frame(se_output, stdSeOutput)
+
+# Figure out the degrees of freedo 
+
+#coefsAll = mi.meld(q = coef_output, se = se_output)
+
+meldAllT_stat = function(x,y){
+  coefsAll = mi.meld(q = x, se = y)
+  coefs1 = t(data.frame(coefsAll$q.mi))
+  ses1 = t(data.frame(coefsAll$se.mi))
+  z_stat = coefs1/ses1
+  p = 2*pnorm(-abs(z_stat))
+  return(data.frame(coefs1, ses1, z_stat, p))
+}
+
+results = meldAllT_stat(coef_output, se_output)
+round(results,3)
+```
+################
+Cohen's D SIS T3
+################
+```{r}
+datTimeTreat = datAnalysisT3
+
+library(psych)
+cohenDat = NULL
+SISTotalT0 = NULL
+SISTotalT1 = NULL
+for(i in 1:m){
+SISTotalT0[[i]] = subset(datTimeTreat[[i]], Time == 0)
+SISTotalT1[[i]] = subset(datTimeTreat[[i]], Time == 1)
+cohenDat[[i]] = mean(SISTotalT1[[i]]$SISTotalScoreF1-SISTotalT0[[i]]$SISTotalScoreF1)/sqrt((sd(SISTotalT1[[i]]$SISTotalScoreF1)^2+sd(SISTotalT0[[i]]$SISTotalScoreF1)^2)/2)
+}
+
+cohenD = data.frame(cohenDat)
+
+meldAllT_stat = function(x,y){
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+###############
+SISF2 Time and T1
+###############
+```{r, echo=FALSE}
+output = list()
+outputReg = list()
+coef_output =  NULL
+se_output = NULL
+rSquared = NULL
+stdBeta = NULL
+stdCoef = NULL
+stdSe = NULL
+
+
+for(i in 1:m){
+  output[[i]] = lmer(SISTotalScoreF2 ~ Time + (1 | ID), data  = datAnalysisT1[[i]])
+  outputReg[[i]] = output[[i]]
+  stdBeta[[i]] = std.coef(output[[i]], partial.sd = TRUE) 
+  stdCoef[[i]] = stdBeta[[i]][2,1]
+  stdSe[[i]] = stdBeta[[i]][2,2]
+  rSquared[[i]] = r.squaredGLMM(output[[i]])
+  output[[i]] = summary(output[[i]])
+  coef_output[[i]] = output[[i]]$coefficients[,1]
+  se_output[[i]] = output[[i]]$coefficients[,2]
+}
+coef_output = data.frame(coef_output)
+
 quickTrans = function(x){
   x = data.frame(x)
   x = t(x)
@@ -1079,6 +2471,1416 @@ meldAllT_stat = function(x,y){
 results = meldAllT_stat(coef_output, se_output)
 round(results,3)
 ```
+################
+Cohen's D SIS T1
+################
+```{r}
+datTimeTreat = datAnalysisT1
+
+library(psych)
+cohenDat = NULL
+SISTotalT0 = NULL
+SISTotalT1 = NULL
+for(i in 1:m){
+SISTotalT0[[i]] = subset(datTimeTreat[[i]], Time == 0)
+SISTotalT1[[i]] = subset(datTimeTreat[[i]], Time == 1)
+cohenDat[[i]] = mean(SISTotalT1[[i]]$SISTotalScoreF2-SISTotalT0[[i]]$SISTotalScoreF2)/sqrt((sd(SISTotalT1[[i]]$SISTotalScoreF2)^2+sd(SISTotalT0[[i]]$SISTotalScoreF2)^2)/2)
+}
+
+cohenD = data.frame(cohenDat)
+
+meldAllT_stat = function(x,y){
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+
+###############
+SISF1 Time and T2
+###############
+```{r, echo=FALSE}
+output = list()
+outputReg = list()
+coef_output =  NULL
+se_output = NULL
+rSquared = NULL
+stdBeta = NULL
+stdCoef = NULL
+stdSe = NULL
+
+
+for(i in 1:m){
+output[[i]] = lmer(SISTotalScoreF2 ~ Time + (1 | ID), data  = datAnalysisT2[[i]])
+outputReg[[i]] = output[[i]]
+stdBeta[[i]] = std.coef(output[[i]], partial.sd = TRUE) 
+stdCoef[[i]] = stdBeta[[i]][2,1]
+stdSe[[i]] = stdBeta[[i]][2,2]
+rSquared[[i]] = r.squaredGLMM(output[[i]])
+output[[i]] = summary(output[[i]])
+coef_output[[i]] = output[[i]]$coefficients[,1]
+se_output[[i]] = output[[i]]$coefficients[,2]
+}
+coef_output = data.frame(coef_output)
+
+quickTrans = function(x){
+x = data.frame(x)
+x = t(x)
+x = data.frame(x)
+}
+coef_output = quickTrans(coef_output)
+se_output = quickTrans(se_output)
+
+stdBetaOutput = data.frame(stdCoef)
+stdSeOutput = data.frame(stdSe)
+
+coef_output = data.frame(coef_output, stdBetaOutput)
+se_output = data.frame(se_output, stdSeOutput)
+
+# Figure out the degrees of freedom 
+
+#coefsAll = mi.meld(q = coef_output, se = se_output)
+
+meldAllT_stat = function(x,y){
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+z_stat = coefs1/ses1
+p = 2*pnorm(-abs(z_stat))
+return(data.frame(coefs1, ses1, z_stat, p))
+}
+
+results = meldAllT_stat(coef_output, se_output)
+round(results,3)
+```
+################
+Cohen's D SIS T2
+################
+```{r}
+datTimeTreat = datAnalysisT2
+
+library(psych)
+cohenDat = NULL
+SISTotalT0 = NULL
+SISTotalT1 = NULL
+for(i in 1:m){
+  SISTotalT0[[i]] = subset(datTimeTreat[[i]], Time == 0)
+  SISTotalT1[[i]] = subset(datTimeTreat[[i]], Time == 1)
+  cohenDat[[i]] = mean(SISTotalT1[[i]]$SISTotalScoreF2-SISTotalT0[[i]]$SISTotalScoreF2)/sqrt((sd(SISTotalT1[[i]]$SISTotalScoreF2)^2+sd(SISTotalT0[[i]]$SISTotalScoreF2)^2)/2)
+}
+
+cohenD = data.frame(cohenDat)
+
+meldAllT_stat = function(x,y){
+  coefsAll = mi.meld(q = x, se = y)
+  coefs1 = t(data.frame(coefsAll$q.mi))
+  ses1 = t(data.frame(coefsAll$se.mi))
+  return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+
+###############
+SIS Time and T3
+###############
+```{r, echo=FALSE}
+output = list()
+outputReg = list()
+coef_output =  NULL
+se_output = NULL
+rSquared = NULL
+stdBeta = NULL
+stdCoef = NULL
+stdSe = NULL
+
+
+for(i in 1:m){
+  output[[i]] = lmer(SISTotalScoreF2 ~ Time + (1 | ID), data  = datAnalysisT3[[i]])
+  outputReg[[i]] = output[[i]]
+  stdBeta[[i]] = std.coef(output[[i]], partial.sd = TRUE) 
+  stdCoef[[i]] = stdBeta[[i]][2,1]
+  stdSe[[i]] = stdBeta[[i]][2,2]
+  rSquared[[i]] = r.squaredGLMM(output[[i]])
+  output[[i]] = summary(output[[i]])
+  coef_output[[i]] = output[[i]]$coefficients[,1]
+  se_output[[i]] = output[[i]]$coefficients[,2]
+}
+coef_output = data.frame(coef_output)
+
+quickTrans = function(x){
+  x = data.frame(x)
+  x = t(x)
+  x = data.frame(x)
+}
+coef_output = quickTrans(coef_output)
+se_output = quickTrans(se_output)
+
+stdBetaOutput = data.frame(stdCoef)
+stdSeOutput = data.frame(stdSe)
+
+coef_output = data.frame(coef_output, stdBetaOutput)
+se_output = data.frame(se_output, stdSeOutput)
+
+# Figure out the degrees of freedo 
+
+#coefsAll = mi.meld(q = coef_output, se = se_output)
+
+meldAllT_stat = function(x,y){
+  coefsAll = mi.meld(q = x, se = y)
+  coefs1 = t(data.frame(coefsAll$q.mi))
+  ses1 = t(data.frame(coefsAll$se.mi))
+  z_stat = coefs1/ses1
+  p = 2*pnorm(-abs(z_stat))
+  return(data.frame(coefs1, ses1, z_stat, p))
+}
+
+results = meldAllT_stat(coef_output, se_output)
+round(results,3)
+```
+################
+Cohen's D SIS T3
+################
+```{r}
+datTimeTreat = datAnalysisT3
+
+library(psych)
+cohenDat = NULL
+SISTotalT0 = NULL
+SISTotalT1 = NULL
+for(i in 1:m){
+SISTotalT0[[i]] = subset(datTimeTreat[[i]], Time == 0)
+SISTotalT1[[i]] = subset(datTimeTreat[[i]], Time == 1)
+cohenDat[[i]] = mean(SISTotalT1[[i]]$SISTotalScoreF2-SISTotalT0[[i]]$SISTotalScoreF2)/sqrt((sd(SISTotalT1[[i]]$SISTotalScoreF2)^2+sd(SISTotalT0[[i]]$SISTotalScoreF2)^2)/2)
+}
+
+cohenD = data.frame(cohenDat)
+
+meldAllT_stat = function(x,y){
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+##################################
+All treatmentments diff Score RASF1
+##################################
+```{r}
+output = NULL
+outputSummary = NULL
+coef_output = NULL
+se_output = NULL
+
+
+for(i in 1:m){
+  output[[i]] = lm(RASDiffF1 ~ factor(Treatment) + Gender + Race + Edu + Employment, data = datWideAnalysis[[i]])
+  outputSummary[[i]] = summary(output[[i]])
+  coef_output[[i]] = outputSummary[[i]]$coefficients[,1]
+  se_output[[i]] = outputSummary[[i]]$coefficients[,2]
+}
+coef_output = data.frame(t(data.frame(coef_output))) 
+se_output = data.frame(t(data.frame(se_output)))
+
+meldAllT_stat = function(x,y){
+  coefsAll = mi.meld(q = x, se = y)
+  coefs1 = t(data.frame(coefsAll$q.mi))
+  ses1 = t(data.frame(coefsAll$se.mi))
+  t_stat = coefs1/ses1
+  p = 2*(pt(-abs(t_stat), df = outputSummary[[2]]$df[2]))
+  return(data.frame(coefs1, ses1, t_stat, p))
+}
+
+
+results = meldAllT_stat(coef_output, se_output)
+round(results, 3)
+
+# Make sure things make sense i.e. difference in means
+compmeans(datWideAnalysis[[1]]$RASDiffF1, datWideAnalysis[[1]]$Treatment)
+
+```
+Contrasts
+```{r}
+K = matrix(c(0, 1, -1, 0,0,0,0), 1)
+library(multcomp)
+t = NULL
+for(i in 1:m){
+  t[[i]] = glht(output[[i]], linfct = K)
+  t[[i]] = summary(t[[i]])
+}
+t
+```
+############################################
+Cohen's D for Treatment 2 versus Treatment 1
+############################################
+```{r}
+datWideAnalysisT12 = NULL
+
+for(i in 1:m){
+  datWideAnalysisT12[[i]] = subset(datWideAnalysis[[i]], Treatment == 1 | Treatment == 2)
+}
+
+
+cohenDat = NULL
+for(i in 1:m){
+  cohenDat[[i]] = cohen.d(datWideAnalysisT12[[i]]$RASDiffF1, datWideAnalysisT12[[i]]$Treatment, hedges.correction = TRUE)
+  cohenDat[[i]] = cohenDat[[i]]$estimate
+}
+
+cohenD = data.frame(t(data.frame(cohenDat)))
+
+meldAllT_stat = function(x,y){
+  coefsAll = mi.meld(q = x, se = y)
+  coefs1 = t(data.frame(coefsAll$q.mi))
+  ses1 = t(data.frame(coefsAll$se.mi))
+  return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+############################################
+Cohen's D for Treatment 1 and 3
+############################################
+```{r}
+datWideAnalysisT13 = NULL
+
+for(i in 1:m){
+  datWideAnalysisT13[[i]] = subset(datWideAnalysis[[i]], Treatment == 1 | Treatment == 3)
+}
+
+
+cohenDat = NULL
+for(i in 1:m){
+  cohenDat[[i]] = cohen.d(datWideAnalysisT13[[i]]$RASDiffF1, datWideAnalysisT13[[i]]$Treatment, hedges.correction = TRUE)
+  cohenDat[[i]] = cohenDat[[i]]$estimate
+}
+
+cohenD = data.frame(t(data.frame(cohenDat)))
+
+meldAllT_stat = function(x,y){
+  coefsAll = mi.meld(q = x, se = y)
+  coefs1 = t(data.frame(coefsAll$q.mi))
+  ses1 = t(data.frame(coefsAll$se.mi))
+  return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+############################################
+Cohen's D for Treatment 3 versus Treatment 2
+############################################
+```{r}
+datWideAnalysisT23 = NULL
+
+for(i in 1:m){
+  datWideAnalysisT23[[i]] = subset(datWideAnalysis[[i]], Treatment == 2 | Treatment == 3)
+}
+
+
+cohenDat = NULL
+for(i in 1:m){
+  cohenDat[[i]] = cohen.d(datWideAnalysisT23[[i]]$RASDiffF1, datWideAnalysisT23[[i]]$Treatment, hedges.correction = TRUE)
+  cohenDat[[i]] = cohenDat[[i]]$estimate
+}
+
+cohenD = data.frame(t(data.frame(cohenDat)))
+
+meldAllT_stat = function(x,y){
+  coefsAll = mi.meld(q = x, se = y)
+  coefs1 = t(data.frame(coefsAll$q.mi))
+  ses1 = t(data.frame(coefsAll$se.mi))
+  return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+##################################
+All treatmentments diff Score RASF2
+##################################
+```{r}
+output = NULL
+outputSummary = NULL
+coef_output = NULL
+se_output = NULL
+
+
+for(i in 1:m){
+  output[[i]] = lm(RASDiffF2 ~ factor(Treatment) + Gender + Race + Edu + Employment, data = datWideAnalysis[[i]])
+  outputSummary[[i]] = summary(output[[i]])
+  coef_output[[i]] = outputSummary[[i]]$coefficients[,1]
+  se_output[[i]] = outputSummary[[i]]$coefficients[,2]
+}
+coef_output = data.frame(t(data.frame(coef_output))) 
+se_output = data.frame(t(data.frame(se_output)))
+
+meldAllT_stat = function(x,y){
+  coefsAll = mi.meld(q = x, se = y)
+  coefs1 = t(data.frame(coefsAll$q.mi))
+  ses1 = t(data.frame(coefsAll$se.mi))
+  t_stat = coefs1/ses1
+  p = 2*(pt(-abs(t_stat), df = outputSummary[[2]]$df[2]))
+  return(data.frame(coefs1, ses1, t_stat, p))
+}
+
+
+results = meldAllT_stat(coef_output, se_output)
+round(results, 3)
+
+# Make sure things make sense i.e. difference in means
+compmeans(datWideAnalysis[[1]]$RASDiffF2, datWideAnalysis[[1]]$Treatment)
+
+```
+Contrasts
+```{r}
+K = matrix(c(0, 1, -1, 0,0,0,0), 1)
+library(multcomp)
+t = NULL
+for(i in 1:m){
+  t[[i]] = glht(output[[i]], linfct = K)
+  t[[i]] = summary(t[[i]])
+}
+t
+```
+############################################
+Cohen's D for Treatment 2 versus Treatment 1
+############################################
+```{r}
+datWideAnalysisT12 = NULL
+
+for(i in 1:m){
+datWideAnalysisT12[[i]] = subset(datWideAnalysis[[i]], Treatment == 1 | Treatment == 2)
+}
+
+
+cohenDat = NULL
+for(i in 1:m){
+cohenDat[[i]] = cohen.d(datWideAnalysisT12[[i]]$RASDiffF2, datWideAnalysisT12[[i]]$Treatment, hedges.correction = TRUE)
+cohenDat[[i]] = cohenDat[[i]]$estimate
+}
+
+cohenD = data.frame(t(data.frame(cohenDat)))
+
+meldAllT_stat = function(x,y){
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+############################################
+Cohen's D for Treatment 1 and 3
+############################################
+```{r}
+datWideAnalysisT13 = NULL
+
+for(i in 1:m){
+  datWideAnalysisT13[[i]] = subset(datWideAnalysis[[i]], Treatment == 1 | Treatment == 3)
+}
+
+
+cohenDat = NULL
+for(i in 1:m){
+  cohenDat[[i]] = cohen.d(datWideAnalysisT13[[i]]$RASDiffF2, datWideAnalysisT13[[i]]$Treatment, hedges.correction = TRUE)
+  cohenDat[[i]] = cohenDat[[i]]$estimate
+}
+
+cohenD = data.frame(t(data.frame(cohenDat)))
+
+meldAllT_stat = function(x,y){
+  coefsAll = mi.meld(q = x, se = y)
+  coefs1 = t(data.frame(coefsAll$q.mi))
+  ses1 = t(data.frame(coefsAll$se.mi))
+  return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+############################################
+Cohen's D for Treatment 3 versus Treatment 2
+############################################
+```{r}
+datWideAnalysisT23 = NULL
+
+for(i in 1:m){
+datWideAnalysisT23[[i]] = subset(datWideAnalysis[[i]], Treatment == 2 | Treatment == 3)
+}
+
+
+cohenDat = NULL
+for(i in 1:m){
+cohenDat[[i]] = cohen.d(datWideAnalysisT23[[i]]$RASDiffF2, datWideAnalysisT23[[i]]$Treatment, hedges.correction = TRUE)
+cohenDat[[i]] = cohenDat[[i]]$estimate
+}
+
+cohenD = data.frame(t(data.frame(cohenDat)))
+
+meldAllT_stat = function(x,y){
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+##################################
+All treatmentments diff Score RASF3
+##################################
+```{r}
+output = NULL
+outputSummary = NULL
+coef_output = NULL
+se_output = NULL
+
+
+for(i in 1:m){
+  output[[i]] = lm(RASDiffF3 ~ factor(Treatment) + Gender + Race + Edu + Employment, data = datWideAnalysis[[i]])
+  outputSummary[[i]] = summary(output[[i]])
+  coef_output[[i]] = outputSummary[[i]]$coefficients[,1]
+  se_output[[i]] = outputSummary[[i]]$coefficients[,2]
+}
+coef_output = data.frame(t(data.frame(coef_output))) 
+se_output = data.frame(t(data.frame(se_output)))
+
+meldAllT_stat = function(x,y){
+  coefsAll = mi.meld(q = x, se = y)
+  coefs1 = t(data.frame(coefsAll$q.mi))
+  ses1 = t(data.frame(coefsAll$se.mi))
+  t_stat = coefs1/ses1
+  p = 2*(pt(-abs(t_stat), df = outputSummary[[2]]$df[2]))
+  return(data.frame(coefs1, ses1, t_stat, p))
+}
+
+
+results = meldAllT_stat(coef_output, se_output)
+round(results, 3)
+
+# Make sure things make sense i.e. difference in means
+compmeans(datWideAnalysis[[1]]$RASDiffF3, datWideAnalysis[[1]]$Treatment)
+
+```
+Contrasts
+```{r}
+K = matrix(c(0, 1, -1, 0,0,0,0), 1)
+library(multcomp)
+t = NULL
+for(i in 1:m){
+  t[[i]] = glht(output[[i]], linfct = K)
+  t[[i]] = summary(t[[i]])
+}
+t
+```
+############################################
+Cohen's D for Treatment 2 versus Treatment 1
+############################################
+```{r}
+datWideAnalysisT12 = NULL
+
+for(i in 1:m){
+datWideAnalysisT12[[i]] = subset(datWideAnalysis[[i]], Treatment == 1 | Treatment == 2)
+}
+
+
+cohenDat = NULL
+for(i in 1:m){
+cohenDat[[i]] = cohen.d(datWideAnalysisT12[[i]]$RASDiffF3, datWideAnalysisT12[[i]]$Treatment, hedges.correction = TRUE)
+cohenDat[[i]] = cohenDat[[i]]$estimate
+}
+
+cohenD = data.frame(t(data.frame(cohenDat)))
+
+meldAllT_stat = function(x,y){
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+############################################
+Cohen's D for Treatment 1 and 3
+############################################
+```{r}
+datWideAnalysisT13 = NULL
+
+for(i in 1:m){
+  datWideAnalysisT13[[i]] = subset(datWideAnalysis[[i]], Treatment == 1 | Treatment == 3)
+}
+
+
+cohenDat = NULL
+for(i in 1:m){
+  cohenDat[[i]] = cohen.d(datWideAnalysisT13[[i]]$RASDiffF3, datWideAnalysisT13[[i]]$Treatment, hedges.correction = TRUE)
+  cohenDat[[i]] = cohenDat[[i]]$estimate
+}
+
+cohenD = data.frame(t(data.frame(cohenDat)))
+
+meldAllT_stat = function(x,y){
+  coefsAll = mi.meld(q = x, se = y)
+  coefs1 = t(data.frame(coefsAll$q.mi))
+  ses1 = t(data.frame(coefsAll$se.mi))
+  return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+############################################
+Cohen's D for Treatment 3 versus Treatment 2
+############################################
+```{r}
+datWideAnalysisT23 = NULL
+
+for(i in 1:m){
+datWideAnalysisT23[[i]] = subset(datWideAnalysis[[i]], Treatment == 2 | Treatment == 3)
+}
+
+
+cohenDat = NULL
+for(i in 1:m){
+cohenDat[[i]] = cohen.d(datWideAnalysisT23[[i]]$RASDiffF3, datWideAnalysisT23[[i]]$Treatment, hedges.correction = TRUE)
+cohenDat[[i]] = cohenDat[[i]]$estimate
+}
+
+cohenD = data.frame(t(data.frame(cohenDat)))
+
+meldAllT_stat = function(x,y){
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+##################################
+All treatmentments diff Score RASF5
+##################################
+```{r}
+output = NULL
+outputSummary = NULL
+coef_output = NULL
+se_output = NULL
+
+
+for(i in 1:m){
+  output[[i]] = lm(RASDiffF5 ~ factor(Treatment) + Gender + Race + Edu + Employment, data = datWideAnalysis[[i]])
+  outputSummary[[i]] = summary(output[[i]])
+  coef_output[[i]] = outputSummary[[i]]$coefficients[,1]
+  se_output[[i]] = outputSummary[[i]]$coefficients[,2]
+}
+coef_output = data.frame(t(data.frame(coef_output))) 
+se_output = data.frame(t(data.frame(se_output)))
+
+meldAllT_stat = function(x,y){
+  coefsAll = mi.meld(q = x, se = y)
+  coefs1 = t(data.frame(coefsAll$q.mi))
+  ses1 = t(data.frame(coefsAll$se.mi))
+  t_stat = coefs1/ses1
+  p = 2*(pt(-abs(t_stat), df = outputSummary[[2]]$df[2]))
+  return(data.frame(coefs1, ses1, t_stat, p))
+}
+
+
+results = meldAllT_stat(coef_output, se_output)
+round(results, 3)
+
+# Make sure things make sense i.e. difference in means
+compmeans(datWideAnalysis[[1]]$RASDiffF5, datWideAnalysis[[1]]$Treatment)
+
+```
+Contrasts
+```{r}
+K = matrix(c(0, 1, -1, 0,0,0,0), 1)
+library(multcomp)
+t = NULL
+for(i in 1:m){
+  t[[i]] = glht(output[[i]], linfct = K)
+  t[[i]] = summary(t[[i]])
+}
+t
+```
+############################################
+Cohen's D for Treatment 2 versus Treatment 1
+############################################
+```{r}
+datWideAnalysisT12 = NULL
+
+for(i in 1:m){
+datWideAnalysisT12[[i]] = subset(datWideAnalysis[[i]], Treatment == 1 | Treatment == 2)
+}
+
+
+cohenDat = NULL
+for(i in 1:m){
+cohenDat[[i]] = cohen.d(datWideAnalysisT12[[i]]$RASDiffF5, datWideAnalysisT12[[i]]$Treatment, hedges.correction = TRUE)
+cohenDat[[i]] = cohenDat[[i]]$estimate
+}
+
+cohenD = data.frame(t(data.frame(cohenDat)))
+
+meldAllT_stat = function(x,y){
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+############################################
+Cohen's D for Treatment 1 and 3
+############################################
+```{r}
+datWideAnalysisT13 = NULL
+
+for(i in 1:m){
+  datWideAnalysisT13[[i]] = subset(datWideAnalysis[[i]], Treatment == 1 | Treatment == 3)
+}
+
+
+cohenDat = NULL
+for(i in 1:m){
+  cohenDat[[i]] = cohen.d(datWideAnalysisT13[[i]]$RASDiffF5, datWideAnalysisT13[[i]]$Treatment, hedges.correction = TRUE)
+  cohenDat[[i]] = cohenDat[[i]]$estimate
+}
+
+cohenD = data.frame(t(data.frame(cohenDat)))
+
+meldAllT_stat = function(x,y){
+  coefsAll = mi.meld(q = x, se = y)
+  coefs1 = t(data.frame(coefsAll$q.mi))
+  ses1 = t(data.frame(coefsAll$se.mi))
+  return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+############################################
+Cohen's D for Treatment 3 versus Treatment 2
+############################################
+```{r}
+datWideAnalysisT23 = NULL
+
+for(i in 1:m){
+datWideAnalysisT23[[i]] = subset(datWideAnalysis[[i]], Treatment == 2 | Treatment == 3)
+}
+
+
+cohenDat = NULL
+for(i in 1:m){
+cohenDat[[i]] = cohen.d(datWideAnalysisT23[[i]]$RASDiffF5, datWideAnalysisT23[[i]]$Treatment, hedges.correction = TRUE)
+cohenDat[[i]] = cohenDat[[i]]$estimate
+}
+
+cohenD = data.frame(t(data.frame(cohenDat)))
+
+meldAllT_stat = function(x,y){
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+##################################
+All treatmentments diff Score INQF1
+##################################
+```{r}
+output = NULL
+outputSummary = NULL
+coef_output = NULL
+se_output = NULL
+
+
+for(i in 1:m){
+  output[[i]] = lm(INQDiffF1 ~ factor(Treatment) + Gender + Race + Edu + Employment, data = datWideAnalysis[[i]])
+  outputSummary[[i]] = summary(output[[i]])
+  coef_output[[i]] = outputSummary[[i]]$coefficients[,1]
+  se_output[[i]] = outputSummary[[i]]$coefficients[,2]
+}
+coef_output = data.frame(t(data.frame(coef_output))) 
+se_output = data.frame(t(data.frame(se_output)))
+
+meldAllT_stat = function(x,y){
+  coefsAll = mi.meld(q = x, se = y)
+  coefs1 = t(data.frame(coefsAll$q.mi))
+  ses1 = t(data.frame(coefsAll$se.mi))
+  t_stat = coefs1/ses1
+  p = 2*(pt(-abs(t_stat), df = outputSummary[[2]]$df[2]))
+  return(data.frame(coefs1, ses1, t_stat, p))
+}
+
+
+results = meldAllT_stat(coef_output, se_output)
+round(results, 3)
+
+# Make sure things make sense i.e. difference in means
+compmeans(datWideAnalysis[[1]]$INQDiffF1, datWideAnalysis[[1]]$Treatment)
+
+```
+Contrasts
+```{r}
+K = matrix(c(0, 1, -1, 0,0,0,0), 1)
+library(multcomp)
+t = NULL
+for(i in 1:m){
+  t[[i]] = glht(output[[i]], linfct = K)
+  t[[i]] = summary(t[[i]])
+}
+t
+```
+############################################
+Cohen's D for Treatment 2 versus Treatment 1
+############################################
+```{r}
+datWideAnalysisT12 = NULL
+
+for(i in 1:m){
+datWideAnalysisT12[[i]] = subset(datWideAnalysis[[i]], Treatment == 1 | Treatment == 2)
+}
+
+
+cohenDat = NULL
+for(i in 1:m){
+cohenDat[[i]] = cohen.d(datWideAnalysisT12[[i]]$INQDiffF1, datWideAnalysisT12[[i]]$Treatment, hedges.correction = TRUE)
+cohenDat[[i]] = cohenDat[[i]]$estimate
+}
+
+cohenD = data.frame(t(data.frame(cohenDat)))
+
+meldAllT_stat = function(x,y){
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+############################################
+Cohen's D for Treatment 1 and 3
+############################################
+```{r}
+datWideAnalysisT13 = NULL
+
+for(i in 1:m){
+  datWideAnalysisT13[[i]] = subset(datWideAnalysis[[i]], Treatment == 1 | Treatment == 3)
+}
+
+
+cohenDat = NULL
+for(i in 1:m){
+  cohenDat[[i]] = cohen.d(datWideAnalysisT13[[i]]$INQDiffF1, datWideAnalysisT13[[i]]$Treatment, hedges.correction = TRUE)
+  cohenDat[[i]] = cohenDat[[i]]$estimate
+}
+
+cohenD = data.frame(t(data.frame(cohenDat)))
+
+meldAllT_stat = function(x,y){
+  coefsAll = mi.meld(q = x, se = y)
+  coefs1 = t(data.frame(coefsAll$q.mi))
+  ses1 = t(data.frame(coefsAll$se.mi))
+  return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+############################################
+Cohen's D for Treatment 3 versus Treatment 2
+############################################
+```{r}
+datWideAnalysisT23 = NULL
+
+for(i in 1:m){
+datWideAnalysisT23[[i]] = subset(datWideAnalysis[[i]], Treatment == 2 | Treatment == 3)
+}
+
+
+cohenDat = NULL
+for(i in 1:m){
+cohenDat[[i]] = cohen.d(datWideAnalysisT23[[i]]$INQDiffF1, datWideAnalysisT23[[i]]$Treatment, hedges.correction = TRUE)
+cohenDat[[i]] = cohenDat[[i]]$estimate
+}
+
+cohenD = data.frame(t(data.frame(cohenDat)))
+
+meldAllT_stat = function(x,y){
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+##################################
+All treatmentments diff Score INQF2
+##################################
+```{r}
+output = NULL
+outputSummary = NULL
+coef_output = NULL
+se_output = NULL
+
+
+for(i in 1:m){
+  output[[i]] = lm(INQDiffF2 ~ factor(Treatment) + Gender + Race + Edu + Employment, data = datWideAnalysis[[i]])
+  outputSummary[[i]] = summary(output[[i]])
+  coef_output[[i]] = outputSummary[[i]]$coefficients[,1]
+  se_output[[i]] = outputSummary[[i]]$coefficients[,2]
+}
+coef_output = data.frame(t(data.frame(coef_output))) 
+se_output = data.frame(t(data.frame(se_output)))
+
+meldAllT_stat = function(x,y){
+  coefsAll = mi.meld(q = x, se = y)
+  coefs1 = t(data.frame(coefsAll$q.mi))
+  ses1 = t(data.frame(coefsAll$se.mi))
+  t_stat = coefs1/ses1
+  p = 2*(pt(-abs(t_stat), df = outputSummary[[2]]$df[2]))
+  return(data.frame(coefs1, ses1, t_stat, p))
+}
+
+
+results = meldAllT_stat(coef_output, se_output)
+round(results, 3)
+
+# Make sure things make sense i.e. difference in means
+compmeans(datWideAnalysis[[1]]$INQDiffF2, datWideAnalysis[[1]]$Treatment)
+
+```
+Contrasts
+```{r}
+K = matrix(c(0, 1, -1, 0,0,0,0), 1)
+library(multcomp)
+t = NULL
+for(i in 1:m){
+  t[[i]] = glht(output[[i]], linfct = K)
+  t[[i]] = summary(t[[i]])
+}
+t
+```
+############################################
+Cohen's D for Treatment 2 versus Treatment 1
+############################################
+```{r}
+datWideAnalysisT12 = NULL
+
+for(i in 1:m){
+datWideAnalysisT12[[i]] = subset(datWideAnalysis[[i]], Treatment == 1 | Treatment == 2)
+}
+
+
+cohenDat = NULL
+for(i in 1:m){
+cohenDat[[i]] = cohen.d(datWideAnalysisT12[[i]]$INQDiffF2, datWideAnalysisT12[[i]]$Treatment, hedges.correction = TRUE)
+cohenDat[[i]] = cohenDat[[i]]$estimate
+}
+
+cohenD = data.frame(t(data.frame(cohenDat)))
+
+meldAllT_stat = function(x,y){
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+############################################
+Cohen's D for Treatment 1 and 3
+############################################
+```{r}
+datWideAnalysisT13 = NULL
+
+for(i in 1:m){
+  datWideAnalysisT13[[i]] = subset(datWideAnalysis[[i]], Treatment == 1 | Treatment == 3)
+}
+
+
+cohenDat = NULL
+for(i in 1:m){
+  cohenDat[[i]] = cohen.d(datWideAnalysisT13[[i]]$INQDiffF2, datWideAnalysisT13[[i]]$Treatment, hedges.correction = TRUE)
+  cohenDat[[i]] = cohenDat[[i]]$estimate
+}
+
+cohenD = data.frame(t(data.frame(cohenDat)))
+
+meldAllT_stat = function(x,y){
+  coefsAll = mi.meld(q = x, se = y)
+  coefs1 = t(data.frame(coefsAll$q.mi))
+  ses1 = t(data.frame(coefsAll$se.mi))
+  return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+############################################
+Cohen's D for Treatment 3 versus Treatment 2
+############################################
+```{r}
+datWideAnalysisT23 = NULL
+
+for(i in 1:m){
+datWideAnalysisT23[[i]] = subset(datWideAnalysis[[i]], Treatment == 2 | Treatment == 3)
+}
+
+
+cohenDat = NULL
+for(i in 1:m){
+cohenDat[[i]] = cohen.d(datWideAnalysisT23[[i]]$INQDiffF2, datWideAnalysisT23[[i]]$Treatment, hedges.correction = TRUE)
+cohenDat[[i]] = cohenDat[[i]]$estimate
+}
+
+cohenD = data.frame(t(data.frame(cohenDat)))
+
+meldAllT_stat = function(x,y){
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+
+
+##################################
+All treatmentments diff Score SSMI
+##################################
+```{r}
+output = NULL
+outputSummary = NULL
+coef_output = NULL
+se_output = NULL
+
+
+for(i in 1:m){
+  output[[i]] = lm(SSMIDiff ~ factor(Treatment) + Gender + Race + Edu + Employment, data = datWideAnalysis[[i]])
+  outputSummary[[i]] = summary(output[[i]])
+  coef_output[[i]] = outputSummary[[i]]$coefficients[,1]
+  se_output[[i]] = outputSummary[[i]]$coefficients[,2]
+}
+coef_output = data.frame(t(data.frame(coef_output))) 
+se_output = data.frame(t(data.frame(se_output)))
+
+meldAllT_stat = function(x,y){
+  coefsAll = mi.meld(q = x, se = y)
+  coefs1 = t(data.frame(coefsAll$q.mi))
+  ses1 = t(data.frame(coefsAll$se.mi))
+  t_stat = coefs1/ses1
+  p = 2*(pt(-abs(t_stat), df = outputSummary[[2]]$df[2]))
+  return(data.frame(coefs1, ses1, t_stat, p))
+}
+
+
+results = meldAllT_stat(coef_output, se_output)
+round(results, 3)
+
+# Make sure things make sense i.e. difference in means
+compmeans(datWideAnalysis[[1]]$SSMIDiff, datWideAnalysis[[1]]$Treatment)
+
+```
+Contrasts
+```{r}
+K = matrix(c(0, 1, -1, 0,0,0,0), 1)
+library(multcomp)
+t = NULL
+for(i in 1:m){
+  t[[i]] = glht(output[[i]], linfct = K)
+  t[[i]] = summary(t[[i]])
+}
+t
+```
+############################################
+Cohen's D for Treatment 2 versus Treatment 1
+############################################
+```{r}
+datWideAnalysisT12 = NULL
+
+for(i in 1:m){
+datWideAnalysisT12[[i]] = subset(datWideAnalysis[[i]], Treatment == 1 | Treatment == 2)
+}
+
+
+cohenDat = NULL
+for(i in 1:m){
+cohenDat[[i]] = cohen.d(datWideAnalysisT12[[i]]$SSMIDiff, datWideAnalysisT12[[i]]$Treatment, hedges.correction = TRUE)
+cohenDat[[i]] = cohenDat[[i]]$estimate
+}
+
+cohenD = data.frame(t(data.frame(cohenDat)))
+
+meldAllT_stat = function(x,y){
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+############################################
+Cohen's D for Treatment 1 and 3
+############################################
+```{r}
+datWideAnalysisT13 = NULL
+
+for(i in 1:m){
+  datWideAnalysisT13[[i]] = subset(datWideAnalysis[[i]], Treatment == 1 | Treatment == 3)
+}
+
+
+cohenDat = NULL
+for(i in 1:m){
+  cohenDat[[i]] = cohen.d(datWideAnalysisT13[[i]]$SSMIDiff, datWideAnalysisT13[[i]]$Treatment, hedges.correction = TRUE)
+  cohenDat[[i]] = cohenDat[[i]]$estimate
+}
+
+cohenD = data.frame(t(data.frame(cohenDat)))
+
+meldAllT_stat = function(x,y){
+  coefsAll = mi.meld(q = x, se = y)
+  coefs1 = t(data.frame(coefsAll$q.mi))
+  ses1 = t(data.frame(coefsAll$se.mi))
+  return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+############################################
+Cohen's D for Treatment 3 versus Treatment 2
+############################################
+```{r}
+datWideAnalysisT23 = NULL
+
+for(i in 1:m){
+datWideAnalysisT23[[i]] = subset(datWideAnalysis[[i]], Treatment == 2 | Treatment == 3)
+}
+
+
+cohenDat = NULL
+for(i in 1:m){
+cohenDat[[i]] = cohen.d(datWideAnalysisT23[[i]]$SSMIDiff, datWideAnalysisT23[[i]]$Treatment, hedges.correction = TRUE)
+cohenDat[[i]] = cohenDat[[i]]$estimate
+}
+
+cohenD = data.frame(t(data.frame(cohenDat)))
+
+meldAllT_stat = function(x,y){
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+##################################
+All treatmentments diff Score SISF1
+##################################
+```{r}
+output = NULL
+outputSummary = NULL
+coef_output = NULL
+se_output = NULL
+
+for(i in 1:m){
+  output[[i]] = lm(SISDiffF1 ~ factor(Treatment) + Gender + Race + Edu + Employment, data = datWideAnalysis[[i]])
+  outputSummary[[i]] = summary(output[[i]])
+  coef_output[[i]] = outputSummary[[i]]$coefficients[,1]
+  se_output[[i]] = outputSummary[[i]]$coefficients[,2]
+}
+coef_output = data.frame(t(data.frame(coef_output))) 
+se_output = data.frame(t(data.frame(se_output)))
+
+meldAllT_stat = function(x,y){
+  coefsAll = mi.meld(q = x, se = y)
+  coefs1 = t(data.frame(coefsAll$q.mi))
+  ses1 = t(data.frame(coefsAll$se.mi))
+  t_stat = coefs1/ses1
+  p = 2*(pt(-abs(t_stat), df = outputSummary[[2]]$df[2]))
+  return(data.frame(coefs1, ses1, t_stat, p))
+}
+
+
+results = meldAllT_stat(coef_output, se_output)
+round(results, 3)
+
+# Make sure things make sense i.e. difference in means
+compmeans(datWideAnalysis[[1]]$SISDiffF1, datWideAnalysis[[1]]$Treatment)
+
+```
+Contrasts
+```{r}
+K = matrix(c(0, 1, -1, 0,0,0,0), 1)
+library(multcomp)
+t = NULL
+for(i in 1:m){
+  t[[i]] = glht(output[[i]], linfct = K)
+  t[[i]] = summary(t[[i]])
+}
+t
+```
+############################################
+Cohen's D for Treatment 2 versus Treatment 1
+############################################
+```{r}
+datWideAnalysisT12 = NULL
+
+for(i in 1:m){
+datWideAnalysisT12[[i]] = subset(datWideAnalysis[[i]], Treatment == 1 | Treatment == 2)
+}
+
+
+cohenDat = NULL
+for(i in 1:m){
+cohenDat[[i]] = cohen.d(datWideAnalysisT12[[i]]$SISDiffF1, datWideAnalysisT12[[i]]$Treatment, hedges.correction = TRUE)
+cohenDat[[i]] = cohenDat[[i]]$estimate
+}
+
+cohenD = data.frame(t(data.frame(cohenDat)))
+
+meldAllT_stat = function(x,y){
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+############################################
+Cohen's D for Treatment 1 and 3
+############################################
+```{r}
+datWideAnalysisT13 = NULL
+
+for(i in 1:m){
+  datWideAnalysisT13[[i]] = subset(datWideAnalysis[[i]], Treatment == 1 | Treatment == 3)
+}
+
+
+cohenDat = NULL
+for(i in 1:m){
+  cohenDat[[i]] = cohen.d(datWideAnalysisT13[[i]]$SISDiffF1, datWideAnalysisT13[[i]]$Treatment, hedges.correction = TRUE)
+  cohenDat[[i]] = cohenDat[[i]]$estimate
+}
+
+cohenD = data.frame(t(data.frame(cohenDat)))
+
+meldAllT_stat = function(x,y){
+  coefsAll = mi.meld(q = x, se = y)
+  coefs1 = t(data.frame(coefsAll$q.mi))
+  ses1 = t(data.frame(coefsAll$se.mi))
+  return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+############################################
+Cohen's D for Treatment 3 versus Treatment 2
+############################################
+```{r}
+datWideAnalysisT23 = NULL
+
+for(i in 1:m){
+datWideAnalysisT23[[i]] = subset(datWideAnalysis[[i]], Treatment == 2 | Treatment == 3)
+}
+
+
+cohenDat = NULL
+for(i in 1:m){
+cohenDat[[i]] = cohen.d(datWideAnalysisT23[[i]]$SISDiffF1, datWideAnalysisT23[[i]]$Treatment, hedges.correction = TRUE)
+cohenDat[[i]] = cohenDat[[i]]$estimate
+}
+
+cohenD = data.frame(t(data.frame(cohenDat)))
+
+meldAllT_stat = function(x,y){
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+##################################
+All treatmentments diff Score SISF2
+##################################
+```{r}
+output = NULL
+outputSummary = NULL
+coef_output = NULL
+se_output = NULL
+
+for(i in 1:m){
+  output[[i]] = lm(SISDiffF2 ~ factor(Treatment) + Gender + Race + Edu + Employment, data = datWideAnalysis[[i]])
+  outputSummary[[i]] = summary(output[[i]])
+  coef_output[[i]] = outputSummary[[i]]$coefficients[,1]
+  se_output[[i]] = outputSummary[[i]]$coefficients[,2]
+}
+coef_output = data.frame(t(data.frame(coef_output))) 
+se_output = data.frame(t(data.frame(se_output)))
+
+meldAllT_stat = function(x,y){
+  coefsAll = mi.meld(q = x, se = y)
+  coefs1 = t(data.frame(coefsAll$q.mi))
+  ses1 = t(data.frame(coefsAll$se.mi))
+  t_stat = coefs1/ses1
+  p = 2*(pt(-abs(t_stat), df = outputSummary[[2]]$df[2]))
+  return(data.frame(coefs1, ses1, t_stat, p))
+}
+
+
+results = meldAllT_stat(coef_output, se_output)
+round(results, 3)
+
+# Make sure things make sense i.e. difference in means
+compmeans(datWideAnalysis[[1]]$SISDiffF2, datWideAnalysis[[1]]$Treatment)
+
+```
+Contrasts
+```{r}
+K = matrix(c(0, 1, -1, 0,0,0,0), 1)
+library(multcomp)
+t = NULL
+for(i in 1:m){
+  t[[i]] = glht(output[[i]], linfct = K)
+  t[[i]] = summary(t[[i]])
+}
+t
+```
+############################################
+Cohen's D for Treatment 2 versus Treatment 1
+############################################
+```{r}
+datWideAnalysisT12 = NULL
+
+for(i in 1:m){
+datWideAnalysisT12[[i]] = subset(datWideAnalysis[[i]], Treatment == 1 | Treatment == 2)
+}
+
+
+cohenDat = NULL
+for(i in 1:m){
+cohenDat[[i]] = cohen.d(datWideAnalysisT12[[i]]$SISDiffF2, datWideAnalysisT12[[i]]$Treatment, hedges.correction = TRUE)
+cohenDat[[i]] = cohenDat[[i]]$estimate
+}
+
+cohenD = data.frame(t(data.frame(cohenDat)))
+
+meldAllT_stat = function(x,y){
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+############################################
+Cohen's D for Treatment 1 and 3
+############################################
+```{r}
+datWideAnalysisT13 = NULL
+
+for(i in 1:m){
+  datWideAnalysisT13[[i]] = subset(datWideAnalysis[[i]], Treatment == 1 | Treatment == 3)
+}
+
+
+cohenDat = NULL
+for(i in 1:m){
+  cohenDat[[i]] = cohen.d(datWideAnalysisT13[[i]]$SISDiffF2, datWideAnalysisT13[[i]]$Treatment, hedges.correction = TRUE)
+  cohenDat[[i]] = cohenDat[[i]]$estimate
+}
+
+cohenD = data.frame(t(data.frame(cohenDat)))
+
+meldAllT_stat = function(x,y){
+  coefsAll = mi.meld(q = x, se = y)
+  coefs1 = t(data.frame(coefsAll$q.mi))
+  ses1 = t(data.frame(coefsAll$se.mi))
+  return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+############################################
+Cohen's D for Treatment 3 versus Treatment 2
+############################################
+```{r}
+datWideAnalysisT23 = NULL
+
+for(i in 1:m){
+datWideAnalysisT23[[i]] = subset(datWideAnalysis[[i]], Treatment == 2 | Treatment == 3)
+}
+
+
+cohenDat = NULL
+for(i in 1:m){
+cohenDat[[i]] = cohen.d(datWideAnalysisT23[[i]]$SISDiffF2, datWideAnalysisT23[[i]]$Treatment, hedges.correction = TRUE)
+cohenDat[[i]] = cohenDat[[i]]$estimate
+}
+
+cohenD = data.frame(t(data.frame(cohenDat)))
+
+meldAllT_stat = function(x,y){
+coefsAll = mi.meld(q = x, se = y)
+coefs1 = t(data.frame(coefsAll$q.mi))
+ses1 = t(data.frame(coefsAll$se.mi))
+return(data.frame(coefs1, ses1))
+}
+y = data.frame(rnorm(10))
+
+meldAllT_stat(cohenD, y)
+```
+
+
+
+
 
 
 
