@@ -269,10 +269,11 @@ datAnalysisAll = lapply(1:m, function(x){datAdultAnalysisImpute$imputations[[x]]
 
 dim(datAnalysisAll[[1]])
 
+head(datAnalysisAll[[1]])
 ###### Wide vesion here
 datWideAnalysis = NULL
 for(i in 1:m){
-  datWideAnalysis[[i]] = reshape(datAnalysisAll[[i]], v.names = c("RASTotalScoreF1", "RASTotalScoreF2", "RASTotalScoreF3", "RASTotalScoreF5", "INQTotalScoreF1", "INQTotalScoreF2", "SISTotalScoreF1", "SISTotalScoreF2", "SSMITotalScore"),  timevar = "Time", direction = "wide", idvar = "ID")
+  datWideAnalysis[[i]] = reshape(datAnalysisAll[[i]], v.names = c("RASTotalScoreF1", "RASTotalScoreF2", "RASTotalScoreF3", "RASTotalScoreF5", "INQTotalScoreF1", "INQTotalScoreF2", "SSMITotalScore"),  timevar = "Time", direction = "wide", idvar = "ID")
 }
 
 
@@ -283,9 +284,7 @@ for(i in 1:m){
   datWideAnalysis[[i]]$RASDiffF3 =datWideAnalysis[[i]]$RASTotalScoreF3.1-datWideAnalysis[[i]]$RASTotalScoreF3.0
   datWideAnalysis[[i]]$RASDiffF5 =datWideAnalysis[[i]]$RASTotalScoreF5.1-datWideAnalysis[[i]]$RASTotalScoreF5.0
   datWideAnalysis[[i]]$INQDiffF1 =datWideAnalysis[[i]]$INQTotalScoreF1.1-datWideAnalysis[[i]]$INQTotalScoreF1.0  
-  datWideAnalysis[[i]]$INQDiffF2 =datWideAnalysis[[i]]$INQTotalScoreF2.1-datWideAnalysis[[i]]$INQTotalScoreF2.0   
-datWideAnalysis[[i]]$SISDiffF1 =datWideAnalysis[[i]]$SISTotalScoreF1.1-datWideAnalysis[[i]]$SISTotalScoreF1.0
-datWideAnalysis[[i]]$SISDiffF2 =datWideAnalysis[[i]]$SISTotalScoreF2.1-datWideAnalysis[[i]]$SISTotalScoreF2.0 
+  datWideAnalysis[[i]]$INQDiffF2 =datWideAnalysis[[i]]$INQTotalScoreF2.1-datWideAnalysis[[i]]$INQTotalScoreF2.0
   datWideAnalysis[[i]]$SSMIDiff =datWideAnalysis[[i]]$SSMITotalScore.1-datWideAnalysis[[i]]$SSMITotalScore.0
 }
 
