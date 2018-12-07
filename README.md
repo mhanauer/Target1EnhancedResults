@@ -10,12 +10,6 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r, include=FALSE}
-setwd("P:/Evaluation/TN Lives Count_Writing/4_Target1_EnhancedCrisisFollow-up/3_Data & Data Analyses")
-datPreAdult = read.csv("Target1EnhancedBaseAdult.csv", header = TRUE)
-datPostAdult = read.csv("Target1EnhancedPostAdult.csv", header = TRUE)
-datPreYouth = read.csv("Target1EnhancedBaseYouth.csv", header= FALSE, row.names = NULL)
-datPostYouth = read.csv("Target1EnhancedPostYouth.csv", header = FALSE, row.names = NULL)
-datAdultTreat = read.csv("AdultTreatments.csv", header = TRUE)
 library(foreign)
 library(nnet)
 library(ggplot2)
@@ -51,10 +45,6 @@ library(jtools)
 library(paran)
 library(effsize)
 library(multcomp)
-library(MuMIn)
-
-
-
 
 
 
@@ -72,7 +62,6 @@ colnames(datPreAdult)[colnames(datPreAdult) == "Added.V2..Thinking.of.Ways.to.Ki
 ## Now merge everything
 datAdult = merge(datPreAdult, datPostAdult, by = "Adult.ID", sort = TRUE)
 head(datAdult)
-dim(datAdult)
 
 ### 357 is still around above
 
@@ -82,9 +71,10 @@ dim(datAdult)
 
 head(datAdultTreat)
 
-datAdult = merge(datAdult, datAdultTreat, by = "Adult.ID", sort = TRUE)
+
+datAdult = merge(datAdult, datAdultTreat, by = "Adult.ID", all.x = TRUE, sort = TRUE)
 head(datAdult)
-dim(datAdult)
+
 
 
 
@@ -107,9 +97,7 @@ head(datAdult)
 #Checking for issues with adult data set
 
 summary(datAdult)
-dim(datAdult)
 
-describe.factor(datAdult$Age)
 # One person age is 451 get rid of them
 datAdult = subset(datAdult, Age < 450)
 dim(datAdult)
@@ -129,7 +117,6 @@ describe.factor(datAdult$Treatment)
 
 ## If there are NA's for treatment then need to drop them
 datAdult = subset(datAdult, Treatment == 1 | Treatment == 2 | Treatment == 3)
-dim(datAdult)
 compmeans(datAdult$RAS1, datAdult$Time)
 
 # Three items are reversed scored: f = 6, g = 7, j = 10
@@ -141,6 +128,18 @@ datAdult$INQ10= ifelse(datAdult$INQ10== 1, 5, ifelse(datAdult$INQ10== 2,4, ifels
 
 
 head(datAdult)
+
+### 357 is still around above
+###### Scores are different above but very similar
+
+## Now long format so don't have to rename twice
+
+
+
+# Rename everything, which you will rename for the youth data set as well 
+# 
+
+
 
 
 
@@ -187,25 +186,71 @@ SISSub1 = SIS[c(1:4)]
 #Subscale 2 for SIS: e-g: 5:7
 SISSub2 = SIS[c(5:7)]
 
-SSMIPrePost = datAdult[c(41:45)]
+
 # Creating sum scores for the data analysis that contains all data not just pre data
 datAdultDemos = datAdult[c(1:10)]
+head(datAdultDemos)
 
+RASPrePost = datAdult[c(11:30)]
+head(RAS)
+INQPrePost = datAdult[c(31:40)]
+head(INQ)
+SSMIPrePost = datAdult[c(41:45)]
+head(SSMI)
+SISPrePost = datAdult[c(46:52)]
+head(SIS)
 
-RASTotalScoreF1 = rowSums(RASSub1)
-RASTotalScoreF2 = rowSums(RASSub2)
-RASTotalScoreF3 = rowSums(RASSub3)
-RASTotalScoreF5 = rowSums(RASSub5)
-INQTotalScoreF1 = rowSums(INQSub1)
-INQTotalScoreF2 = rowSums(INQSub2)
-SISTotalScoreF1 = rowSums(SISSub1)
-SISTotalScoreF2 = rowSums(SISSub2)
+RASTotalScore = rowSums(RASPrePost)
+INQTotalScore = rowSums(INQPrePost)
 SSMITotalScore = rowSums(SSMIPrePost)
-
+SISTotalScore = rowSums(SISPrePost)
 
 ### Jennifer Lockman full data set
-datAdultAnalysisJen = data.frame(datAdultDemos, RASTotalScoreF1, RASTotalScoreF2, RASTotalScoreF3, RASTotalScoreF5, INQTotalScoreF1, INQTotalScoreF2, SISTotalScoreF1, SISTotalScoreF2, SSMITotalScore)
+datAdultAnalysisJen = data.frame(datAdultDemos, RASPrePost, INQPrePost, SSMIPrePost, SISPrePost, RASTotalScore, INQTotalScore, SSMITotalScore, SISTotalScore)
 write.csv(datAdultAnalysisJen, "EnhancedDataSet.csv", row.names = FALSE)
+
+
+datAdultAnalysis = data.frame(datAdultDemos,RASTotalScore , INQTotalScore, SSMITotalScore, SISTotalScore)
+#Need code gender, race, sexual orientation, edu, employment, RelationshipStatus as binary
+#Gender: 2 = 1, 1 = 0
+#Race: 7 = 0, all else 1
+#Sex Orien: 3 = 0, all else 1
+#Edu: 2 = 1, all else = 0; high school over lower for one
+#Employment 1 = 1 else = 0; unemployed versus everyone else
+#Relationship Status: 1,2,3,4 = 1 else = 0
+
+
+datAdultAnalysis$Gender = ifelse(datAdultAnalysis$Gender == 2,1, 0)
+datAdultAnalysis$Race = ifelse(datAdultAnalysis$Race == 7,0, 1)
+datAdultAnalysis$SexualOrientation = ifelse(datAdultAnalysis$SexualOrientation == 3,0, 1)
+datAdultAnalysis$Edu = ifelse(datAdultAnalysis$Edu == 2,1, 0)
+datAdultAnalysis$Employment = ifelse(datAdultAnalysis$Employment == 1,1, 0)
+
+
+datAdultAnalysis$RelationshipStatus = ifelse(datAdultAnalysis$RelationshipStatus <= 4, 1, 0)
+describe.factor(datAdultAnalysis$RelationshipStatus)
+
+
+# For the complete data set I need to drop SIS, because there is a ton of missing data
+datAdultAnalysisComplete = datAdultAnalysis
+datAdultAnalysisComplete$SISTotalScore = NULL
+datAdultAnalysisComplete = na.omit(datAdultAnalysisComplete)
+
+### Create data for t-tests
+datAdultAnalysisCompletePre = subset(datAdultAnalysisComplete, Time == 0) 
+
+head(datAdultAnalysisCompletePre)
+
+datAdultAnalysisCompletePost = subset(datAdultAnalysisComplete, Time == 1) 
+head(datAdultAnalysisCompletePost)
+datAdultAnalysisCompletePost
+
+datAdultAnalysisCompleteT.test = merge(datAdultAnalysisCompletePre, datAdultAnalysisCompletePost, by = "ID", all.x = TRUE)
+
+datAdultAnalysisCompleteT.testComplete = na.omit(datAdultAnalysisCompleteT.test)
+dim(datAdultAnalysisCompleteT.testComplete)
+
+write.csv(datAdultAnalysis, "EnhancedDataSet.csv", row.names = FALSE)
 
 
 datAdultAnalysis = data.frame(datAdultDemos, RASTotalScoreF1, RASTotalScoreF2, RASTotalScoreF3, RASTotalScoreF5, INQTotalScoreF1, INQTotalScoreF2, SISTotalScoreF1, SISTotalScoreF2, SSMITotalScore)
