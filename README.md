@@ -110,7 +110,7 @@ summary(datAdult)
 dim(datAdult)
 
 dim(subset(datAdult, Time  == 1))
-
+dim(subset(datAdult, Time  == 0))
 describe.factor(datAdult$Age)
 # One person age is 451 get rid of them
 datAdult = subset(datAdult, Age < 450)
@@ -209,7 +209,6 @@ SSMITotalScore = rowSums(SSMIPrePost)
 datAdultAnalysisJen = data.frame(datAdultDemos, RASTotalScoreF1, RASTotalScoreF2, RASTotalScoreF3, RASTotalScoreF5, INQTotalScoreF1, INQTotalScoreF2, SISTotalScoreF1, SISTotalScoreF2, SSMITotalScore)
 write.csv(datAdultAnalysisJen, "EnhancedDataSet.csv", row.names = FALSE)
 
-
 datAdultAnalysis = data.frame(datAdultDemos, RASTotalScoreF1, RASTotalScoreF2, RASTotalScoreF3, RASTotalScoreF5, INQTotalScoreF1, INQTotalScoreF2, SISTotalScoreF1, SISTotalScoreF2, SSMITotalScore)
 #Need code gender, race, sexual orientation, edu, employment, RelationshipStatus as binary
 #Gender: 2 = 1, 1 = 0
@@ -223,7 +222,7 @@ datAdultAnalysis = data.frame(datAdultDemos, RASTotalScoreF1, RASTotalScoreF2, R
 datAdultAnalysis$Gender = ifelse(datAdultAnalysis$Gender == 2,1, 0)
 datAdultAnalysis$Race = ifelse(datAdultAnalysis$Race == 7,0, 1)
 datAdultAnalysis$SexualOrientation = ifelse(datAdultAnalysis$SexualOrientation == 3,0, 1)
-datAdultAnalysis$Edu = ifelse(datAdultAnalysis$Edu == 2,1, 0)
+datAdultAnalysis$Edu = ifelse(datAdultAnalysis$Edu <= 2,1, 0)
 datAdultAnalysis$Employment = ifelse(datAdultAnalysis$Employment == 1,1, 0)
 
 
@@ -330,6 +329,7 @@ round(apply(datAdultAnalysisCompleteBase, 2, sd, na.rm = TRUE),2)
 
 # Post
 datAdultAnalysisCompletePost = subset(datAdultAnalysis, Time == 1)
+dim(datAdultAnalysisCompletePost)
 describe(datAdultAnalysisCompletePost)
 describe.factor(datAdultAnalysisCompletePost$Gender)
 describe.factor(datAdultAnalysisCompletePost$Race)
