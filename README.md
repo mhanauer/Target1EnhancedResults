@@ -69,10 +69,11 @@ head(datPostAdult)
 colnames(datPreAdult)[colnames(datPreAdult) == "Added.V2..Thinking.of.Ways.to.Kill.Self"] = "Added"   
 
 ## Now merge everything
-datAdult = merge(datPreAdult, datPostAdult, by = "Adult.ID", sort = TRUE)
+datAdult = merge(datPreAdult, datPostAdult, by = "Adult.ID", sort = TRUE, all.x = TRUE)
 head(datAdult)
 dim(datAdult)
 
+datAdult$Adult.ID
 ### 357 is still around above
 
 # Need to er
@@ -81,8 +82,12 @@ dim(datAdult)
 
 head(datAdultTreat)
 
+## If you don't have a treatment you cannot be included
 datAdult = merge(datAdult, datAdultTreat, by = "Adult.ID", sort = TRUE)
 head(datAdult)
+
+
+### This is the actual sample size, because you cannot be included in the study if you do not have a treatment
 dim(datAdult)
 
 
@@ -109,30 +114,28 @@ head(datAdult)
 summary(datAdult)
 dim(datAdult)
 
+
 dim(subset(datAdult, Time  == 1))
 dim(subset(datAdult, Time  == 0))
 describe.factor(datAdult$Age)
 # One person age is 451 get rid of them
 datAdult = subset(datAdult, Age < 450)
 dim(datAdult)
+dim(subset(datAdult, Time  == 1))
+dim(subset(datAdult, Time  == 0))
 
-
+describe.factor(datAdult$Treatment)
 
 # Two treatments have B with space first so try and recode those as just B's
-datAdult$Treatment = ifelse(datAdult$Treatment == " B", "B", datAdult$Treatment)
-compmeans(datAdult$RAS1, datAdult$Time)
+datAdult$Treatment = ifelse(datAdult$Treatment == "A", 1, ifelse(datAdult$Treatment =="B", 2, ifelse(datAdult$Treatment == " B", 2, ifelse(datAdult$Treatment == "C", 3, datAdult$Treatment)))) 
+
+datAdult$Treatment = ifelse(datAdult$Treatment == 7,2, datAdult$Treatment)
 
 describe.factor(datAdult$Treatment)
 
-describe.factor(datAdult$Treatment)
-datAdult$Treatment = ifelse(datAdult$Treatment == 8, 1, ifelse(datAdult$Treatment == 3, 2, ifelse(datAdult$Treatment == 6, 3, ifelse(datAdult$Treatment == "B", 2, datAdult$Treatment))))
+dim(subset(datAdult, Time  == 1))
+dim(subset(datAdult, Time  == 0))
 
-describe.factor(datAdult$Treatment)
-
-## If there are NA's for treatment then need to drop them
-datAdult = subset(datAdult, Treatment == 1 | Treatment == 2 | Treatment == 3)
-dim(datAdult)
-compmeans(datAdult$RAS1, datAdult$Time)
 
 # Three items are reversed scored: f = 6, g = 7, j = 10
 datAdult$INQ6 = ifelse(datAdult$INQ6 == 1, 5, ifelse(datAdult$INQ6 == 2,4, ifelse(datAdult$INQ6  == 3,3, ifelse(datAdult$INQ6  == 4,2, ifelse(datAdult$INQ6  == 5,1,datAdult$INQ6)))))
@@ -210,13 +213,14 @@ datAdultAnalysisJen = data.frame(datAdultDemos, RASTotalScoreF1, RASTotalScoreF2
 write.csv(datAdultAnalysisJen, "EnhancedDataSet.csv", row.names = FALSE)
 
 datAdultAnalysis = data.frame(datAdultDemos, RASTotalScoreF1, RASTotalScoreF2, RASTotalScoreF3, RASTotalScoreF5, INQTotalScoreF1, INQTotalScoreF2, SISTotalScoreF1, SISTotalScoreF2, SSMITotalScore)
+dim(datAdultAnalysis)
 #Need code gender, race, sexual orientation, edu, employment, RelationshipStatus as binary
-#Gender: 2 = 1, 1 = 0
-#Race: 7 = 0, all else 1
-#Sex Orien: 3 = 0, all else 1
+#Gender: 2 = 1, 1 = 0 female
+#Race: 7 = 0, all else 1 non-white
+#Sex Orien: 3 = 0, all else 1 sexual minrotiry
 #Edu: 2 = 1, all else = 0; high school over lower for one
 #Employment 1 = 1 else = 0; unemployed versus everyone else
-#Relationship Status: 1,2,3,4 = 1 else = 0
+#Relationship Status: 1,2,3,4 = 1 else = 0 single
 
 
 datAdultAnalysis$Gender = ifelse(datAdultAnalysis$Gender == 2,1, 0)
@@ -234,12 +238,11 @@ describe.factor(datAdultAnalysis$RelationshipStatus)
 dim(datAdultAnalysis)
 datAdultAnalysis$SISTotalScoreF1 = NULL
 datAdultAnalysis$SISTotalScoreF2 = NULL
-datAdultAnalysisComplete = datAdultAnalysis
-datAdultAnalysisComplete = na.omit(datAdultAnalysisComplete)
+datAdultAnalysisComplete = na.omit(datAdultAnalysis)
 dim(datAdultAnalysisComplete)
 
 ## Getting the percentage of data missing for each variable across
-
+dim(datAdultAnalysis)[1]
 ## Calculating how much data is missing
 1-(dim(datAdultAnalysisComplete)[1]/dim(datAdultAnalysis)[1])
 
@@ -250,33 +253,19 @@ dim(datAdultAnalysisCompletePre)
 
 datAdultAnalysisCompletePost = subset(datAdultAnalysisComplete, Time == 1) 
 dim(datAdultAnalysisCompletePost)
-datAdultAnalysisCompletePost
-setwd("C:/Users/Matthew.Hanauer/Desktop")
 
-write.csv(datAdultAnalysis, "EnhancedDataSet.csv", row.names = FALSE)
 
 describe.factor(datAdultAnalysis$ID)
 
 datAdultAnalysis = datAdultAnalysis[order(datAdultAnalysis$ID),]
-
-## There are some repeats of three people who have the same pre and post twice.
-#763, 1131, 1272
-datAdultAnalysis = datAdultAnalysis[-c(81:82),]  
-datAdultAnalysis[80:86,]
-
-datAdultAnalysis[189:192,]
-datAdultAnalysis = datAdultAnalysis[-c(189:190),]
-
-datAdultAnalysis[221:224,]
-datAdultAnalysis = datAdultAnalysis[-c(221:221),]
-
-dim(subset(datAdultAnalysis, Time == 0))
+datAdultAnalysis$ID
+datAdultAnalysis$RASTotalScoreF1
 
 m = 10
 datAdultAnalysisImpute = amelia(m = m, datAdultAnalysis, noms = c("Gender", "Race", "Edu", "SexualOrientation", "RelationshipStatus", "Employment"), idvars = c("ID", "Treatment"), ts = "Time")
 
-#compare.density(datAdultAnalysisImpute, var = "RASTotalScore")
-#compare.density(datAdultAnalysisImpute, var = "INQTotalScore")
+compare.density(datAdultAnalysisImpute, var = "RASTotalScoreF1")
+compare.density(datAdultAnalysisImpute, var = "INQTotalScore")
 #compare.density(datAdultAnalysisImpute, var = "SSMITotalScore")
 #compare.density(datAdultAnalysisImpute, var = "SISTotalScore")
 
@@ -314,31 +303,30 @@ for(i in 1:m){
 Checking descriptives at each time point
 #####################
 ```{r}
-datAdultAnalysisCompleteBase = subset(datAdultAnalysis, Time == 0)
-dim(datAdultAnalysisCompleteBase)
-describe(datAdultAnalysisCompleteBase)
-describe.factor(datAdultAnalysisCompleteBase$Gender)
-describe.factor(datAdultAnalysisCompleteBase$Race)
-describe.factor(datAdultAnalysisCompleteBase$RelationshipStatus)
-describe.factor(datAdultAnalysisCompleteBase$Edu)
-describe.factor(datAdultAnalysisCompleteBase$Employment)
-describe.factor(datAdultAnalysisCompleteBase$Treatment)
+datAdultAnalysisBase = subset(datAdultAnalysis, Time == 0)
+dim(datAdultAnalysisBase)
+describe(datAdultAnalysisBase)
+describe.factor(datAdultAnalysisBase$Gender)
+describe.factor(datAdultAnalysisBase$Race)
+describe.factor(datAdultAnalysisBase$RelationshipStatus)
+describe.factor(datAdultAnalysisBase$Edu)
+describe.factor(datAdultAnalysisBase$Employment)
+describe.factor(datAdultAnalysisBase$Treatment)
 
-round(apply(datAdultAnalysisCompleteBase, 2, sd, na.rm = TRUE),2)
+round(apply(datAdultAnalysisBase, 2, sd, na.rm = TRUE),2)
 
 
 # Post
-datAdultAnalysisCompletePost = subset(datAdultAnalysis, Time == 1)
-dim(datAdultAnalysisCompletePost)
-describe(datAdultAnalysisCompletePost)
-describe.factor(datAdultAnalysisCompletePost$Gender)
-describe.factor(datAdultAnalysisCompletePost$Race)
-describe.factor(datAdultAnalysisCompletePost$RelationshipStatus)
-describe.factor(datAdultAnalysisCompletePost$Edu)
-describe.factor(datAdultAnalysisCompletePost$Employment)
+datAdultAnalysisPost = subset(datAdultAnalysis, Time == 1)
+dim(datAdultAnalysisPost)
+describe(datAdultAnalysisPost)
+describe.factor(datAdultAnalysisPost$Gender)
+describe.factor(datAdultAnalysisPost$Race)
+describe.factor(datAdultAnalysisPost$RelationshipStatus)
+describe.factor(datAdultAnalysisPost$Edu)
+describe.factor(datAdultAnalysisPost$Employment)
 
-round(apply(datAdultAnalysisCompletePost, 2, sd, na.rm = TRUE),2)
-
+round(apply(datAdultAnalysisPost, 2, sd, na.rm = TRUE),2)
 
 ```
 
