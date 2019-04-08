@@ -53,6 +53,7 @@ library(multcomp)
 library(MuMIn)
 library(installr)
 library(konfound)
+library(multcomp)
 
 
 
@@ -127,7 +128,7 @@ head(datAdult)
 #Checking for issues with adult data set
 ## In the paper start with 115, because we have three less people later
 ## 763.0 likely double entry 1131.0, 1272
-datAdult[c(187,189, 227,229), c(1:5)]
+datAdult[c(187:189, 227:229), c(1:5)]
 
 datAdult = datAdult[-c(187,189, 227,229),]
 
@@ -258,15 +259,6 @@ library(MissMech)
 head(datAdultAnalysis)
 dim(datAdultAnalysis)
 TestMCARNormality(datAdultAnalysis)
-
-### Just go with all demos you only get three extra people
-datAdultAnalysisDemo = na.omit(datAdultAnalysis)
-dim(datAdultAnalysisDemo)
-datAdultAnalysisNoDemo = na.omit(datAdultAnalysis[,-c(2:8)])
-dim(datAdultAnalysisNoDemo)
-head(datAdultAnalysisNoDemo)
-
-datAdultAnalysisComplete = na.omit(datAdultAnalysis)
 ```
 
 
@@ -301,7 +293,6 @@ round(apply(datAdultAnalysisPost, 2, sd, na.rm = TRUE),2)
 
 
 # Get percentage of missing values
-install.packages("ForImp")
 library(ForImp)
 missingness(datAdultAnalysis)
 ```
@@ -338,7 +329,6 @@ modelT23 = glm(Treatment ~  Age + Gender + Race + SexualOrientation + Relationsh
 
 summary(modelT23)
 ```
-
 ################################################
 Multilevel with treatment only with imputed data
 ################################################
@@ -347,21 +337,23 @@ Regular, standardized, percentage change and sens
 dim(datAdultAnalysisComplete)
 
 ### Scale the outcomes
-scale_outcomes = scale(datAdultAnalysisComplete[,11:17])
+head(datAdultAnalysisComplete[,11:18])
+scale_outcomes = scale(datAdultAnalysisComplete[,11:18])
 colMeans(scale_outcomes)
 apply(scale_outcomes, 2, sd)
 
 ### Get the log of the outcomes
-head(log(datAdultAnalysisComplete[,11:17]))
-head(datAdultAnalysisComplete[,11:17])
+head(datAdultAnalysisComplete[,11:18])
 
-log_outcomes= log(datAdultAnalysisComplete[,11:17])
+log_outcomes= log(datAdultAnalysisComplete[,11:18])
 
 datAdultAnalysisComplete = data.frame(datAdultAnalysisComplete, scale_outcomes, log_outcomes)
 
 datAnalysisT1 = subset(datAdultAnalysisComplete, Treatment == 1)
 datAnalysisT2 = subset(datAdultAnalysisComplete, Treatment == 2)
 datAnalysisT3 = subset(datAdultAnalysisComplete, Treatment == 3)
+
+head(datAdultAnalysisComplete$SSMITotalScore.2)
 
 ```
 
@@ -823,6 +815,7 @@ output_log = lmer(SISTotalScoreF1.2 ~ Time + (1 | ID), data  = datAnalysisT3)
 summary(output_log)
 
 
+
 uninstall.packages("lmerTest")
 output_reg = lmer(SISTotalScoreF1 ~ Time + (1 | ID), data  = datAnalysisT3)
 konfound(output_reg, Time)
@@ -833,665 +826,171 @@ All treatmentments diff Score RASF1
 ```{r}
 install.packages("lmerTest")
 library(lmerTest)
-output_reg = lmer(RASTotalScoreF1 ~ Time*factor(Treatment) + (1 | ID), data  = datAdultAnalysisComplete)
+output_reg = lmer(RASTotalScoreF1 ~ SexualOrientation + Time*factor(Treatment) +  + (1 | ID), data  = datAdultAnalysisComplete)
 summary(output_reg)
-
-output_reg = lmer(RASTotalScoreF2 ~ Time*factor(Treatment) + (1 | ID), data  = datAdultAnalysisComplete)
-summary(output_reg)
-
-output_reg = lmer(RASTotalScoreF3 ~ Time*factor(Treatment) + (1 | ID), data  = datAdultAnalysisComplete)
-summary(output_reg)
-
-output_reg = lmer(RASTotalScoreF5 ~ Time*factor(Treatment) + (1 | ID), data  = datAdultAnalysisComplete)
-summary(output_reg)
-
 confint(output_reg)
-output_stand = lmer(SISTotalScoreF1.1 ~ Time + (1 | ID), data  = datAnalysisT3)
-summary(output_stand)
-output_log = lmer(SISTotalScoreF1.2 ~ Time + (1 | ID), data  = datAnalysisT3)
-summary(output_log)
 
+output_reg_stand = lmer(RASTotalScoreF1.1 ~ SexualOrientation + Time*factor(Treatment) +  + (1 | ID), data  = datAdultAnalysisComplete)
+summary(output_reg_stand)
 
-uninstall.packages("lmerTest")
-output_reg = lmer(SISTotalScoreF1 ~ Time + (1 | ID), data  = datAnalysisT3)
-konfound(output_reg, Time)
-
+output_reg_log = lmer(RASTotalScoreF1.2 ~ SexualOrientation + Time*factor(Treatment) +  + (1 | ID), data  = datAdultAnalysisComplete)
+summary(output_reg_log)
 
 ```
-Contrasts
+RASF1 Contrasts 
 ```{r}
-K = matrix(c(0, 1, -1, 0,0,0,0), 1)
-library(multcomp)
-t = NULL
-for(i in 1:m){
-  t[[i]] = glht(output[[i]], linfct = K)
-  t[[i]] = summary(t[[i]])
-}
-t
+K = matrix(c(0, 0, 0, 1, -1, 0, 0, 0, 0, 0, 0, 0, 1, -1), ncol = 7, nrow = 2, byrow = TRUE)
+t = glht(output_reg, linfct = K)
+t_sum = summary(t)
+t_sum
+confint(t)
+
+t_stand = glht(output_reg_stand, linfct = K)
+t_stand_sum = summary(t_stand)
+t_stand_sum
+
+t_log = glht(output_reg_log, linfct = K)
+t_log_sum = summary(t_log)
+t_log_sum
+
 ```
-############################################
-Cohen's D for Treatment 2 versus Treatment 1
-############################################
-```{r}
-datWideAnalysisT12 = NULL
 
-for(i in 1:m){
-  datWideAnalysisT12[[i]] = subset(datWideAnalysis[[i]], Treatment == 1 | Treatment == 2)
-}
-
-
-cohenDat = NULL
-for(i in 1:m){
-  cohenDat[[i]] = cohen.d(datWideAnalysisT12[[i]]$RASDiffF1, datWideAnalysisT12[[i]]$Treatment, hedges.correction = TRUE)
-  cohenDat[[i]] = cohenDat[[i]]$estimate
-}
-
-cohenD = data.frame(t(data.frame(cohenDat)))
-
-meldAllT_stat = function(x,y){
-  coefsAll = mi.meld(q = x, se = y)
-  coefs1 = t(data.frame(coefsAll$q.mi))
-  ses1 = t(data.frame(coefsAll$se.mi))
-  return(data.frame(coefs1, ses1))
-}
-y = data.frame(rnorm(10))
-
-meldAllT_stat(cohenD, y)
-```
-############################################
-Cohen's D for Treatment 1 and 3
-############################################
-```{r}
-datWideAnalysisT13 = NULL
-
-for(i in 1:m){
-  datWideAnalysisT13[[i]] = subset(datWideAnalysis[[i]], Treatment == 1 | Treatment == 3)
-}
-
-
-cohenDat = NULL
-for(i in 1:m){
-  cohenDat[[i]] = cohen.d(datWideAnalysisT13[[i]]$RASDiffF1, datWideAnalysisT13[[i]]$Treatment, hedges.correction = TRUE)
-  cohenDat[[i]] = cohenDat[[i]]$estimate
-}
-
-cohenD = data.frame(t(data.frame(cohenDat)))
-
-meldAllT_stat = function(x,y){
-  coefsAll = mi.meld(q = x, se = y)
-  coefs1 = t(data.frame(coefsAll$q.mi))
-  ses1 = t(data.frame(coefsAll$se.mi))
-  return(data.frame(coefs1, ses1))
-}
-y = data.frame(rnorm(10))
-
-meldAllT_stat(cohenD, y)
-```
-############################################
-Cohen's D for Treatment 3 versus Treatment 2
-############################################
-```{r}
-datWideAnalysisT23 = NULL
-
-for(i in 1:m){
-  datWideAnalysisT23[[i]] = subset(datWideAnalysis[[i]], Treatment == 2 | Treatment == 3)
-}
-
-
-cohenDat = NULL
-for(i in 1:m){
-  cohenDat[[i]] = cohen.d(datWideAnalysisT23[[i]]$RASDiffF1, datWideAnalysisT23[[i]]$Treatment, hedges.correction = TRUE)
-  cohenDat[[i]] = cohenDat[[i]]$estimate
-}
-
-cohenD = data.frame(t(data.frame(cohenDat)))
-
-meldAllT_stat = function(x,y){
-  coefsAll = mi.meld(q = x, se = y)
-  coefs1 = t(data.frame(coefsAll$q.mi))
-  ses1 = t(data.frame(coefsAll$se.mi))
-  return(data.frame(coefs1, ses1))
-}
-y = data.frame(rnorm(10))
-
-meldAllT_stat(cohenD, y)
-```
 ##################################
 All treatmentments diff Score RASF2
 ##################################
 ```{r}
-output = NULL
-outputSummary = NULL
-coef_output = NULL
-se_output = NULL
+output_reg = lmer(RASTotalScoreF2 ~ SexualOrientation + Time*factor(Treatment) +  + (1 | ID), data  = datAdultAnalysisComplete)
+summary(output_reg)
+confint(output_reg)
 
+output_reg_stand = lmer(RASTotalScoreF2.1 ~ SexualOrientation + Time*factor(Treatment) +  + (1 | ID), data  = datAdultAnalysisComplete)
+summary(output_reg_stand)
 
-for(i in 1:m){
-  output[[i]] = lm(RASDiffF2 ~ factor(Treatment) + Gender + Race + Edu + Employment, data = datWideAnalysis[[i]])
-  outputSummary[[i]] = summary(output[[i]])
-  coef_output[[i]] = outputSummary[[i]]$coefficients[,1]
-  se_output[[i]] = outputSummary[[i]]$coefficients[,2]
-}
-coef_output = data.frame(t(data.frame(coef_output))) 
-se_output = data.frame(t(data.frame(se_output)))
-
-meldAllT_stat = function(x,y){
-  coefsAll = mi.meld(q = x, se = y)
-  coefs1 = t(data.frame(coefsAll$q.mi))
-  ses1 = t(data.frame(coefsAll$se.mi))
-  t_stat = coefs1/ses1
-  p = 2*(pt(-abs(t_stat), df = outputSummary[[2]]$df[2]))
-  return(data.frame(coefs1, ses1, t_stat, p))
-}
-
-
-results = meldAllT_stat(coef_output, se_output)
-round(results, 3)
-
-# Make sure things make sense i.e. difference in means
-compmeans(datWideAnalysis[[1]]$RASDiffF2, datWideAnalysis[[1]]$Treatment)
+output_reg_log = lmer(RASTotalScoreF2.2 ~ SexualOrientation + Time*factor(Treatment) +  + (1 | ID), data  = datAdultAnalysisComplete)
+summary(output_reg_log)
 
 ```
-Contrasts
+RASF2 Contrasts 
 ```{r}
-K = matrix(c(0, 1, -1, 0,0,0,0), 1)
-library(multcomp)
-t = NULL
-for(i in 1:m){
-  t[[i]] = glht(output[[i]], linfct = K)
-  t[[i]] = summary(t[[i]])
-}
-t
+K = matrix(c(0, 0, 0, 1, -1, 0, 0, 0, 0, 0, 0, 0, 1, -1), ncol = 7, nrow = 2, byrow = TRUE)
+t = glht(output_reg, linfct = K)
+t_sum = summary(t)
+t_sum
+confint(t)
+
+t_stand = glht(output_reg_stand, linfct = K)
+t_stand_sum = summary(t_stand)
+t_stand_sum
+
+t_log = glht(output_reg_log, linfct = K)
+t_log_sum = summary(t_log)
+t_log_sum
+
 ```
-############################################
-Cohen's D for Treatment 2 versus Treatment 1
-############################################
-```{r}
-datWideAnalysisT12 = NULL
 
-for(i in 1:m){
-datWideAnalysisT12[[i]] = subset(datWideAnalysis[[i]], Treatment == 1 | Treatment == 2)
-}
-
-
-cohenDat = NULL
-for(i in 1:m){
-cohenDat[[i]] = cohen.d(datWideAnalysisT12[[i]]$RASDiffF2, datWideAnalysisT12[[i]]$Treatment, hedges.correction = TRUE)
-cohenDat[[i]] = cohenDat[[i]]$estimate
-}
-
-cohenD = data.frame(t(data.frame(cohenDat)))
-
-meldAllT_stat = function(x,y){
-coefsAll = mi.meld(q = x, se = y)
-coefs1 = t(data.frame(coefsAll$q.mi))
-ses1 = t(data.frame(coefsAll$se.mi))
-return(data.frame(coefs1, ses1))
-}
-y = data.frame(rnorm(10))
-
-meldAllT_stat(cohenD, y)
-```
-############################################
-Cohen's D for Treatment 1 and 3
-############################################
-```{r}
-datWideAnalysisT13 = NULL
-
-for(i in 1:m){
-  datWideAnalysisT13[[i]] = subset(datWideAnalysis[[i]], Treatment == 1 | Treatment == 3)
-}
-
-
-cohenDat = NULL
-for(i in 1:m){
-  cohenDat[[i]] = cohen.d(datWideAnalysisT13[[i]]$RASDiffF2, datWideAnalysisT13[[i]]$Treatment, hedges.correction = TRUE)
-  cohenDat[[i]] = cohenDat[[i]]$estimate
-}
-
-cohenD = data.frame(t(data.frame(cohenDat)))
-
-meldAllT_stat = function(x,y){
-  coefsAll = mi.meld(q = x, se = y)
-  coefs1 = t(data.frame(coefsAll$q.mi))
-  ses1 = t(data.frame(coefsAll$se.mi))
-  return(data.frame(coefs1, ses1))
-}
-y = data.frame(rnorm(10))
-
-meldAllT_stat(cohenD, y)
-```
-############################################
-Cohen's D for Treatment 3 versus Treatment 2
-############################################
-```{r}
-datWideAnalysisT23 = NULL
-
-for(i in 1:m){
-datWideAnalysisT23[[i]] = subset(datWideAnalysis[[i]], Treatment == 2 | Treatment == 3)
-}
-
-
-cohenDat = NULL
-for(i in 1:m){
-cohenDat[[i]] = cohen.d(datWideAnalysisT23[[i]]$RASDiffF2, datWideAnalysisT23[[i]]$Treatment, hedges.correction = TRUE)
-cohenDat[[i]] = cohenDat[[i]]$estimate
-}
-
-cohenD = data.frame(t(data.frame(cohenDat)))
-
-meldAllT_stat = function(x,y){
-coefsAll = mi.meld(q = x, se = y)
-coefs1 = t(data.frame(coefsAll$q.mi))
-ses1 = t(data.frame(coefsAll$se.mi))
-return(data.frame(coefs1, ses1))
-}
-y = data.frame(rnorm(10))
-
-meldAllT_stat(cohenD, y)
-```
 ##################################
 All treatmentments diff Score RASF3
 ##################################
 ```{r}
-output = NULL
-outputSummary = NULL
-coef_output = NULL
-se_output = NULL
+output_reg = lmer(RASTotalScoreF3 ~ SexualOrientation + Time*factor(Treatment) +  + (1 | ID), data  = datAdultAnalysisComplete)
+summary(output_reg)
+confint(output_reg)
 
+output_reg_stand = lmer(RASTotalScoreF3.1 ~ SexualOrientation + Time*factor(Treatment) +  + (1 | ID), data  = datAdultAnalysisComplete)
+summary(output_reg_stand)
 
-for(i in 1:m){
-  output[[i]] = lm(RASDiffF3 ~ factor(Treatment) + Gender + Race + Edu + Employment, data = datWideAnalysis[[i]])
-  outputSummary[[i]] = summary(output[[i]])
-  coef_output[[i]] = outputSummary[[i]]$coefficients[,1]
-  se_output[[i]] = outputSummary[[i]]$coefficients[,2]
-}
-coef_output = data.frame(t(data.frame(coef_output))) 
-se_output = data.frame(t(data.frame(se_output)))
-
-meldAllT_stat = function(x,y){
-  coefsAll = mi.meld(q = x, se = y)
-  coefs1 = t(data.frame(coefsAll$q.mi))
-  ses1 = t(data.frame(coefsAll$se.mi))
-  t_stat = coefs1/ses1
-  p = 2*(pt(-abs(t_stat), df = outputSummary[[2]]$df[2]))
-  return(data.frame(coefs1, ses1, t_stat, p))
-}
-
-
-results = meldAllT_stat(coef_output, se_output)
-round(results, 3)
-
-# Make sure things make sense i.e. difference in means
-compmeans(datWideAnalysis[[1]]$RASDiffF3, datWideAnalysis[[1]]$Treatment)
+output_reg_log = lmer(RASTotalScoreF3.2 ~ SexualOrientation + Time*factor(Treatment) +  + (1 | ID), data  = datAdultAnalysisComplete)
+summary(output_reg_log)
 
 ```
-Contrasts
+RASF2 Contrasts 
 ```{r}
-K = matrix(c(0, 1, -1, 0,0,0,0), 1)
-library(multcomp)
-t = NULL
-for(i in 1:m){
-  t[[i]] = glht(output[[i]], linfct = K)
-  t[[i]] = summary(t[[i]])
-}
-t
-```
-############################################
-Cohen's D for Treatment 2 versus Treatment 1
-############################################
-```{r}
-datWideAnalysisT12 = NULL
+K = matrix(c(0, 0, 0, 1, -1, 0, 0, 0, 0, 0, 0, 0, 1, -1), ncol = 7, nrow = 2, byrow = TRUE)
+t = glht(output_reg, linfct = K)
+t_sum = summary(t)
+t_sum
+confint(t)
 
-for(i in 1:m){
-datWideAnalysisT12[[i]] = subset(datWideAnalysis[[i]], Treatment == 1 | Treatment == 2)
-}
+t_stand = glht(output_reg_stand, linfct = K)
+t_stand_sum = summary(t_stand)
+t_stand_sum
 
+t_log = glht(output_reg_log, linfct = K)
+t_log_sum = summary(t_log)
+t_log_sum
 
-cohenDat = NULL
-for(i in 1:m){
-cohenDat[[i]] = cohen.d(datWideAnalysisT12[[i]]$RASDiffF3, datWideAnalysisT12[[i]]$Treatment, hedges.correction = TRUE)
-cohenDat[[i]] = cohenDat[[i]]$estimate
-}
-
-cohenD = data.frame(t(data.frame(cohenDat)))
-
-meldAllT_stat = function(x,y){
-coefsAll = mi.meld(q = x, se = y)
-coefs1 = t(data.frame(coefsAll$q.mi))
-ses1 = t(data.frame(coefsAll$se.mi))
-return(data.frame(coefs1, ses1))
-}
-y = data.frame(rnorm(10))
-
-meldAllT_stat(cohenD, y)
-```
-############################################
-Cohen's D for Treatment 1 and 3
-############################################
-```{r}
-datWideAnalysisT13 = NULL
-
-for(i in 1:m){
-  datWideAnalysisT13[[i]] = subset(datWideAnalysis[[i]], Treatment == 1 | Treatment == 3)
-}
-
-
-cohenDat = NULL
-for(i in 1:m){
-  cohenDat[[i]] = cohen.d(datWideAnalysisT13[[i]]$RASDiffF3, datWideAnalysisT13[[i]]$Treatment, hedges.correction = TRUE)
-  cohenDat[[i]] = cohenDat[[i]]$estimate
-}
-
-cohenD = data.frame(t(data.frame(cohenDat)))
-
-meldAllT_stat = function(x,y){
-  coefsAll = mi.meld(q = x, se = y)
-  coefs1 = t(data.frame(coefsAll$q.mi))
-  ses1 = t(data.frame(coefsAll$se.mi))
-  return(data.frame(coefs1, ses1))
-}
-y = data.frame(rnorm(10))
-
-meldAllT_stat(cohenD, y)
-```
-############################################
-Cohen's D for Treatment 3 versus Treatment 2
-############################################
-```{r}
-datWideAnalysisT23 = NULL
-
-for(i in 1:m){
-datWideAnalysisT23[[i]] = subset(datWideAnalysis[[i]], Treatment == 2 | Treatment == 3)
-}
-
-
-cohenDat = NULL
-for(i in 1:m){
-cohenDat[[i]] = cohen.d(datWideAnalysisT23[[i]]$RASDiffF3, datWideAnalysisT23[[i]]$Treatment, hedges.correction = TRUE)
-cohenDat[[i]] = cohenDat[[i]]$estimate
-}
-
-cohenD = data.frame(t(data.frame(cohenDat)))
-
-meldAllT_stat = function(x,y){
-coefsAll = mi.meld(q = x, se = y)
-coefs1 = t(data.frame(coefsAll$q.mi))
-ses1 = t(data.frame(coefsAll$se.mi))
-return(data.frame(coefs1, ses1))
-}
-y = data.frame(rnorm(10))
-
-meldAllT_stat(cohenD, y)
 ```
 ##################################
 All treatmentments diff Score RASF5
 ##################################
 ```{r}
-output = NULL
-outputSummary = NULL
-coef_output = NULL
-se_output = NULL
+output_reg = lmer(RASTotalScoreF5 ~ SexualOrientation + Time*factor(Treatment) +  + (1 | ID), data  = datAdultAnalysisComplete)
+summary(output_reg)
+confint(output_reg)
 
+output_reg_stand = lmer(RASTotalScoreF5.1 ~ SexualOrientation + Time*factor(Treatment)   + (1 | ID), data  = datAdultAnalysisComplete)
+summary(output_reg_stand)
 
-for(i in 1:m){
-  output[[i]] = lm(RASDiffF5 ~ factor(Treatment) + Gender + Race + Edu + Employment, data = datWideAnalysis[[i]])
-  outputSummary[[i]] = summary(output[[i]])
-  coef_output[[i]] = outputSummary[[i]]$coefficients[,1]
-  se_output[[i]] = outputSummary[[i]]$coefficients[,2]
-}
-coef_output = data.frame(t(data.frame(coef_output))) 
-se_output = data.frame(t(data.frame(se_output)))
+output_reg_log = lmer(RASTotalScoreF5.2 ~ SexualOrientation + Time*factor(Treatment)  + (1 | ID), data  = datAdultAnalysisComplete)
+summary(output_reg_log)
 
-meldAllT_stat = function(x,y){
-  coefsAll = mi.meld(q = x, se = y)
-  coefs1 = t(data.frame(coefsAll$q.mi))
-  ses1 = t(data.frame(coefsAll$se.mi))
-  t_stat = coefs1/ses1
-  p = 2*(pt(-abs(t_stat), df = outputSummary[[2]]$df[2]))
-  return(data.frame(coefs1, ses1, t_stat, p))
-}
+uninstall.packages("lmerTest")
+output_reg = lmer(RASTotalScoreF5 ~ SexualOrientation + Time*factor(Treatment) +  + (1 | ID), data  = datAdultAnalysisComplete)
 
-
-results = meldAllT_stat(coef_output, se_output)
-round(results, 3)
-
-# Make sure things make sense i.e. difference in means
-compmeans(datWideAnalysis[[1]]$RASDiffF5, datWideAnalysis[[1]]$Treatment)
+konfound(output_reg, "Time:factor(Treatment)3")
 
 ```
-Contrasts
+RASF5 Contrasts 
 ```{r}
-K = matrix(c(0, 1, -1, 0,0,0,0), 1)
-library(multcomp)
-t = NULL
-for(i in 1:m){
-  t[[i]] = glht(output[[i]], linfct = K)
-  t[[i]] = summary(t[[i]])
-}
-t
-```
-############################################
-Cohen's D for Treatment 2 versus Treatment 1
-############################################
-```{r}
-datWideAnalysisT12 = NULL
+K = matrix(c(0, 0, 0, 1, -1, 0, 0, 0, 0, 0, 0, 0, 1, -1), ncol = 7, nrow = 2, byrow = TRUE)
+t = glht(output_reg, linfct = K)
+t_sum = summary(t)
+t_sum
+confint(t)
 
-for(i in 1:m){
-datWideAnalysisT12[[i]] = subset(datWideAnalysis[[i]], Treatment == 1 | Treatment == 2)
-}
+t_stand = glht(output_reg_stand, linfct = K)
+t_stand_sum = summary(t_stand)
+t_stand_sum
 
-
-cohenDat = NULL
-for(i in 1:m){
-cohenDat[[i]] = cohen.d(datWideAnalysisT12[[i]]$RASDiffF5, datWideAnalysisT12[[i]]$Treatment, hedges.correction = TRUE)
-cohenDat[[i]] = cohenDat[[i]]$estimate
-}
-
-cohenD = data.frame(t(data.frame(cohenDat)))
-
-meldAllT_stat = function(x,y){
-coefsAll = mi.meld(q = x, se = y)
-coefs1 = t(data.frame(coefsAll$q.mi))
-ses1 = t(data.frame(coefsAll$se.mi))
-return(data.frame(coefs1, ses1))
-}
-y = data.frame(rnorm(10))
-
-meldAllT_stat(cohenD, y)
-```
-############################################
-Cohen's D for Treatment 1 and 3
-############################################
-```{r}
-datWideAnalysisT13 = NULL
-
-for(i in 1:m){
-  datWideAnalysisT13[[i]] = subset(datWideAnalysis[[i]], Treatment == 1 | Treatment == 3)
-}
-
-
-cohenDat = NULL
-for(i in 1:m){
-  cohenDat[[i]] = cohen.d(datWideAnalysisT13[[i]]$RASDiffF5, datWideAnalysisT13[[i]]$Treatment, hedges.correction = TRUE)
-  cohenDat[[i]] = cohenDat[[i]]$estimate
-}
-
-cohenD = data.frame(t(data.frame(cohenDat)))
-
-meldAllT_stat = function(x,y){
-  coefsAll = mi.meld(q = x, se = y)
-  coefs1 = t(data.frame(coefsAll$q.mi))
-  ses1 = t(data.frame(coefsAll$se.mi))
-  return(data.frame(coefs1, ses1))
-}
-y = data.frame(rnorm(10))
-
-meldAllT_stat(cohenD, y)
-```
-############################################
-Cohen's D for Treatment 3 versus Treatment 2
-############################################
-```{r}
-datWideAnalysisT23 = NULL
-
-for(i in 1:m){
-datWideAnalysisT23[[i]] = subset(datWideAnalysis[[i]], Treatment == 2 | Treatment == 3)
-}
-
-
-cohenDat = NULL
-for(i in 1:m){
-cohenDat[[i]] = cohen.d(datWideAnalysisT23[[i]]$RASDiffF5, datWideAnalysisT23[[i]]$Treatment, hedges.correction = TRUE)
-cohenDat[[i]] = cohenDat[[i]]$estimate
-}
-
-cohenD = data.frame(t(data.frame(cohenDat)))
-
-meldAllT_stat = function(x,y){
-coefsAll = mi.meld(q = x, se = y)
-coefs1 = t(data.frame(coefsAll$q.mi))
-ses1 = t(data.frame(coefsAll$se.mi))
-return(data.frame(coefs1, ses1))
-}
-y = data.frame(rnorm(10))
-
-meldAllT_stat(cohenD, y)
+t_log = glht(output_reg_log, linfct = K)
+t_log_sum = summary(t_log)
+t_log_sum
 ```
 ##################################
-All treatmentments diff Score INQF1
+All treatmentments diff Score INQTotalScoreF1
 ##################################
 ```{r}
-output = NULL
-outputSummary = NULL
-coef_output = NULL
-se_output = NULL
+install.packages("lmerTest")
+library(lmerTest)
+output_reg = lmer(INQTotalScoreF1 ~ SexualOrientation + Time*factor(Treatment) +  + (1 | ID), data  = datAdultAnalysisComplete)
+summary(output_reg)
+confint(output_reg)
 
+output_reg_stand = lmer(INQTotalScoreF1.1 ~ SexualOrientation + Time*factor(Treatment)   + (1 | ID), data  = datAdultAnalysisComplete)
+summary(output_reg_stand)
 
-for(i in 1:m){
-  output[[i]] = lm(INQDiffF1 ~ factor(Treatment) + Gender + Race + Edu + Employment, data = datWideAnalysis[[i]])
-  outputSummary[[i]] = summary(output[[i]])
-  coef_output[[i]] = outputSummary[[i]]$coefficients[,1]
-  se_output[[i]] = outputSummary[[i]]$coefficients[,2]
-}
-coef_output = data.frame(t(data.frame(coef_output))) 
-se_output = data.frame(t(data.frame(se_output)))
-
-meldAllT_stat = function(x,y){
-  coefsAll = mi.meld(q = x, se = y)
-  coefs1 = t(data.frame(coefsAll$q.mi))
-  ses1 = t(data.frame(coefsAll$se.mi))
-  t_stat = coefs1/ses1
-  p = 2*(pt(-abs(t_stat), df = outputSummary[[2]]$df[2]))
-  return(data.frame(coefs1, ses1, t_stat, p))
-}
-
-
-results = meldAllT_stat(coef_output, se_output)
-round(results, 3)
-
-# Make sure things make sense i.e. difference in means
-compmeans(datWideAnalysis[[1]]$INQDiffF1, datWideAnalysis[[1]]$Treatment)
+output_reg_log = lmer(INQTotalScoreF1.2 ~ SexualOrientation + Time*factor(Treatment)  + (1 | ID), data  = datAdultAnalysisComplete)
+summary(output_reg_log)
 
 ```
-Contrasts
+RASF5 Contrasts 
 ```{r}
-K = matrix(c(0, 1, -1, 0,0,0,0), 1)
-library(multcomp)
-t = NULL
-for(i in 1:m){
-  t[[i]] = glht(output[[i]], linfct = K)
-  t[[i]] = summary(t[[i]])
-}
-t
+K = matrix(c(0, 0, 0, 1, -1, 0, 0, 0, 0, 0, 0, 0, 1, -1), ncol = 7, nrow = 2, byrow = TRUE)
+t = glht(output_reg, linfct = K)
+t_sum = summary(t)
+t_sum
+confint(t)
+
+t_stand = glht(output_reg_stand, linfct = K)
+t_stand_sum = summary(t_stand)
+t_stand_sum
+
+t_log = glht(output_reg_log, linfct = K)
+t_log_sum = summary(t_log)
+t_log_sum
 ```
-############################################
-Cohen's D for Treatment 2 versus Treatment 1
-############################################
-```{r}
-datWideAnalysisT12 = NULL
-
-for(i in 1:m){
-datWideAnalysisT12[[i]] = subset(datWideAnalysis[[i]], Treatment == 1 | Treatment == 2)
-}
 
 
-cohenDat = NULL
-for(i in 1:m){
-cohenDat[[i]] = cohen.d(datWideAnalysisT12[[i]]$INQDiffF1, datWideAnalysisT12[[i]]$Treatment, hedges.correction = TRUE)
-cohenDat[[i]] = cohenDat[[i]]$estimate
-}
-
-cohenD = data.frame(t(data.frame(cohenDat)))
-
-meldAllT_stat = function(x,y){
-coefsAll = mi.meld(q = x, se = y)
-coefs1 = t(data.frame(coefsAll$q.mi))
-ses1 = t(data.frame(coefsAll$se.mi))
-return(data.frame(coefs1, ses1))
-}
-y = data.frame(rnorm(10))
-
-meldAllT_stat(cohenD, y)
-```
-############################################
-Cohen's D for Treatment 1 and 3
-############################################
-```{r}
-datWideAnalysisT13 = NULL
-
-for(i in 1:m){
-  datWideAnalysisT13[[i]] = subset(datWideAnalysis[[i]], Treatment == 1 | Treatment == 3)
-}
-
-
-cohenDat = NULL
-for(i in 1:m){
-  cohenDat[[i]] = cohen.d(datWideAnalysisT13[[i]]$INQDiffF1, datWideAnalysisT13[[i]]$Treatment, hedges.correction = TRUE)
-  cohenDat[[i]] = cohenDat[[i]]$estimate
-}
-
-cohenD = data.frame(t(data.frame(cohenDat)))
-
-meldAllT_stat = function(x,y){
-  coefsAll = mi.meld(q = x, se = y)
-  coefs1 = t(data.frame(coefsAll$q.mi))
-  ses1 = t(data.frame(coefsAll$se.mi))
-  return(data.frame(coefs1, ses1))
-}
-y = data.frame(rnorm(10))
-
-meldAllT_stat(cohenD, y)
-```
-############################################
-Cohen's D for Treatment 3 versus Treatment 2
-############################################
-```{r}
-datWideAnalysisT23 = NULL
-
-for(i in 1:m){
-datWideAnalysisT23[[i]] = subset(datWideAnalysis[[i]], Treatment == 2 | Treatment == 3)
-}
-
-
-cohenDat = NULL
-for(i in 1:m){
-cohenDat[[i]] = cohen.d(datWideAnalysisT23[[i]]$INQDiffF1, datWideAnalysisT23[[i]]$Treatment, hedges.correction = TRUE)
-cohenDat[[i]] = cohenDat[[i]]$estimate
-}
-
-cohenD = data.frame(t(data.frame(cohenDat)))
-
-meldAllT_stat = function(x,y){
-coefsAll = mi.meld(q = x, se = y)
-coefs1 = t(data.frame(coefsAll$q.mi))
-ses1 = t(data.frame(coefsAll$se.mi))
-return(data.frame(coefs1, ses1))
-}
-y = data.frame(rnorm(10))
-
-meldAllT_stat(cohenD, y)
-```
 ##################################
 All treatmentments diff Score INQF2
 ##################################
