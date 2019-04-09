@@ -1,25 +1,15 @@
 ---
-title: "EnhancedResults"
-output: html_document
+title: "Enhanced Results"
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-Ok so I need to transpose the data.  Use row.names = NULL forces numbering, so that will be used when we transpose it
-
-Then grab the variables that we want.  We want the id, treatment, section 1, sections 1 through 4 and then demographics
-
-Then we are renaming every variable. 
-
-Clean the adult data set first then youth
-
-
-
-## Testing data trying to find how the averages over time are the exact same
 ```{r, include=FALSE}
-rm(list=ls())
 setwd("P:/Evaluation/TN Lives Count_Writing/4_Target1_EnhancedCrisisFollow-up/3_Data & Data Analyses")
 datPreAdult = read.csv("Target1EnhancedBaseAdult.csv", header = TRUE)
 datPostAdult = read.csv("Target1EnhancedPostAdult.csv", header = TRUE)
@@ -56,12 +46,14 @@ library(Amelia)
 library(plyr)
 library(DescTools)
 library(MissMech)
-library(robustlmm)
 library(jtools)
 library(paran)
 library(effsize)
 library(multcomp)
-
+library(MuMIn)
+library(installr)
+library(konfound)
+library(multcomp)
 
 
 
@@ -70,19 +62,18 @@ library(multcomp)
 head(datPreAdult)
 # subset the variables that you want
 datPreAdult =datPreAdult[c(1, 3:4, 6,8,10, 12:13, 15:34, 36:45, 47:51, 53:59)]
-
+dim(datPreAdult)
 head(datPostAdult)
 datPostAdult = datPostAdult[c(1, 3:22,24:33, 35:39, 41:47)]
 head(datPostAdult)
-
+dim(datPostAdult)
 # Rename added variables otherwise everything else should be the same
 colnames(datPreAdult)[colnames(datPreAdult) == "Added.V2..Thinking.of.Ways.to.Kill.Self"] = "Added"   
 
 ## Now merge everything
 datAdult = merge(datPreAdult, datPostAdult, by = "Adult.ID", sort = TRUE)
 head(datAdult)
-
-### 357 is still around above
+dim(datAdult)
 
 # Need to er
 #datAdultTreat = read.csv("AdultTreatment.csv", header = TRUE)
@@ -90,10 +81,13 @@ head(datAdult)
 
 head(datAdultTreat)
 
-datAdult = merge(datAdult, datAdultTreat, by = "Adult.ID", all.x = TRUE, sort = TRUE)
+## If you don't have a treatment you cannot be included
+datAdult = merge(datAdult, datAdultTreat, by = "Adult.ID", sort = TRUE)
 head(datAdult)
+dim(datAdult)
 
-
+### This is the actual sample size, because you cannot be included in the study if you do not have a treatment
+dim(datAdult)
 
 
 datAdult = reshape(datAdult, varying = list(c("Desire.to.succeed.x", "Desire.to.succeed.y"), c("My.own.plan.to.stay.well.x", "My.own.plan.to.stay.well.y"), c("Goals.in.life.x", "Goals.in.life.y"), c("Believe.I.can.meet.personal.goals.x", "Believe.I.can.meet.personal.goals.y"), c("Purpose.in.life.x", "Purpose.in.life.y"), c("Fear.doesn.t.stop.me......x", "Fear.doesn.t.stop.me......y"), c("I.can.handle.my.life.x", "I.can.handle.my.life.y"), c("I.like.myself.x", "I.like.myself.y"), c("If.people.really.knew.me.......x", "If.people.really.knew.me.......y"), c("Who.I.want.to.become.x", "Who.I.want.to.become.y"), c("Something.good.will.happen.x", "Something.good.will.happen.y"), c("I.m.hopeful.about.future.x", "I.m.hopeful.about.future.y"), c("Continue.to.have.new.interests.x", "Continue.to.have.new.interests.y"), c("Coping.with.mental.illness.not.focus.of.life.x", "Coping.with.mental.illness.not.focus.of.life.y"), c("Symptoms.interfere.less.and.less.x", "Symptoms.interfere.less.and.less.y"), c("Symptoms.problem.for.shorter.periods.x", "Symptoms.problem.for.shorter.periods.y"), c("Know.when.to.ask.for.help.x", "Know.when.to.ask.for.help.y"), c("Willing.to.ask.for.help.x", "Willing.to.ask.for.help.y"), c("I.ask.for.help.when.I.need.it..x", "I.ask.for.help.when.I.need.it..y"), c("I.can.handle.stress..x", "I.can.handle.stress..y"), c("Better.off.if.I.were.gone.x", "Better.off.if.I.were.gone.y"), c("Happier.without.me.x", "Happier.without.me.y"), c("Death.would.be.a.relief.x", "Death.would.be.a.relief.y"), c("Wish.they.could.be.rid.of.me.x", "Wish.they.could.be.rid.of.me.y"), c("Make.things.worse.x", "Make.things.worse.y"), c("Feel.like.I.belong.x", "Feel.like.I.belong.y"), c("Have.many.caring.and.supportive.friends.x", "Have.many.caring.and.supportive.friends.y"), c("Feel.disconnected.x", "Feel.disconnected.y"), c("Feel.like.an.outsider.x", "Feel.like.an.outsider.y"), c("Close.to.other.people.x", "Close.to.other.people.y"), c("Unable.to.take.care.of.self.x", "Unable.to.take.care.of.self.y"), c("Not.recover.or.get.better.x", "Not.recover.or.get.better.y"), c("I.am.to.blame.x", "I.am.to.blame.y"), c("Unpredictable.x", "Unpredictable.y"), c("Dangerous.x", "Dangerous.y"), c("Wish.life.would.end..x", "Wish.life.would.end..y"), c("Life.not.worth.living.x", "Life.not.worth.living.y"), c("Life.so.bad..feel.like.giving.up..x", "Life.so.bad..feel.like.giving.up..y"), c("Better.for.everyone.if.I.were.to.die..x", "Better.for.everyone.if.I.were.to.die..y"), c("Added.x", "Added.y"), c("No.solution.to.my.problems.x", "No.solution.to.my.problems.y"), c("Believe.my.life.will.end.in.suicide..x", "Believe.my.life.will.end.in.suicide..y")), direction = "long", times = c(0,1))
@@ -106,36 +100,20 @@ colnames(datAdult) = c("ID", "Age", "Gender", "Race", "SexualOrientation", "Rela
 datAdult = data.frame(datAdult)
 head(datAdult)
 datAdult$NA. = NULL
-head(datAdult)
-dim(datAdult)
-head(datAdult)
-
-
-
-#Checking for issues with adult data set
-
-summary(datAdult)
-
-# One person age is 451 get rid of them
-datAdult = subset(datAdult, Age < 450)
 dim(datAdult)
 
+datAdult = datAdult[order(datAdult$ID),]
 
+
+describe.factor(datAdult$Treatment)
 
 # Two treatments have B with space first so try and recode those as just B's
-datAdult$Treatment = ifelse(datAdult$Treatment == " B", "B", datAdult$Treatment)
-compmeans(datAdult$RAS1, datAdult$Time)
-
+datAdult$Treatment = ifelse(datAdult$Treatment == "A", 1, ifelse(datAdult$Treatment =="B", 2, ifelse(datAdult$Treatment == " B", 2, ifelse(datAdult$Treatment == "C", 3, datAdult$Treatment)))) 
 describe.factor(datAdult$Treatment)
 
-describe.factor(datAdult$Treatment)
-datAdult$Treatment = ifelse(datAdult$Treatment == 8, 1, ifelse(datAdult$Treatment == 3, 2, ifelse(datAdult$Treatment == 6, 3, ifelse(datAdult$Treatment == "B", 2, datAdult$Treatment))))
+dim(subset(datAdult, Time  == 1))
+dim(subset(datAdult, Time  == 0))
 
-describe.factor(datAdult$Treatment)
-
-## If there are NA's for treatment then need to drop them
-datAdult = subset(datAdult, Treatment == 1 | Treatment == 2 | Treatment == 3)
-compmeans(datAdult$RAS1, datAdult$Time)
 
 # Three items are reversed scored: f = 6, g = 7, j = 10
 datAdult$INQ6 = ifelse(datAdult$INQ6 == 1, 5, ifelse(datAdult$INQ6 == 2,4, ifelse(datAdult$INQ6  == 3,3, ifelse(datAdult$INQ6  == 4,2, ifelse(datAdult$INQ6  == 5,1,datAdult$INQ6)))))
@@ -147,18 +125,19 @@ datAdult$INQ10= ifelse(datAdult$INQ10== 1, 5, ifelse(datAdult$INQ10== 2,4, ifels
 
 head(datAdult)
 
-### 357 is still around above
-###### Scores are different above but very similar
+#Checking for issues with adult data set
+## In the paper start with 115, because we have three less people later
+## 763.0 likely double entry 1131.0, 1272
+datAdult[c(187:189, 227:229), c(1:5)]
 
-## Now long format so don't have to rename twice
+datAdult = datAdult[-c(187,189, 227,229),]
 
+## Two people dropped, because of two dups
+dim(datAdult)
+describe.factor(datAdult$Time)
+### SO 116 is the analytical starting place#######
 
-
-# Rename everything, which you will rename for the youth data set as well 
-# 
-
-
-
+datDemo = datAdult[,c(1:10)]
 
 
 # Create pre data sets for psychometrics
@@ -204,881 +183,910 @@ SISSub1 = SIS[c(1:4)]
 #Subscale 2 for SIS: e-g: 5:7
 SISSub2 = SIS[c(5:7)]
 
-
+SSMIPrePost = datAdult[c(41:45)]
 # Creating sum scores for the data analysis that contains all data not just pre data
 datAdultDemos = datAdult[c(1:10)]
-head(datAdultDemos)
 
-RASPrePost = datAdult[c(11:30)]
-head(RAS)
-INQPrePost = datAdult[c(31:40)]
-head(INQ)
-SSMIPrePost = datAdult[c(41:45)]
-head(SSMI)
-SISPrePost = datAdult[c(46:52)]
-head(SIS)
 
-RASTotalScore = rowSums(RASPrePost)
-INQTotalScore = rowSums(INQPrePost)
+RASTotalScoreF1 = rowSums(RASSub1)
+RASTotalScoreF2 = rowSums(RASSub2)
+RASTotalScoreF3 = rowSums(RASSub3)
+RASTotalScoreF5 = rowSums(RASSub5)
+INQTotalScoreF1 = rowSums(INQSub1)
+INQTotalScoreF2 = rowSums(INQSub2)
+SISTotalScoreF1 = rowSums(SISSub1)
+SISTotalScoreF2 = rowSums(SISSub2)
 SSMITotalScore = rowSums(SSMIPrePost)
-SISTotalScore = rowSums(SISPrePost)
-
-### Jennifer Lockman full data set
-datAdultAnalysisJen = data.frame(datAdultDemos, RASPrePost, INQPrePost, SSMIPrePost, SISPrePost, RASTotalScore, INQTotalScore, SSMITotalScore, SISTotalScore)
-write.csv(datAdultAnalysisJen, "EnhancedDataSet.csv", row.names = FALSE)
 
 
-datAdultAnalysis = data.frame(datAdultDemos,RASTotalScore , INQTotalScore, SSMITotalScore, SISTotalScore)
+
+datAdultAnalysis = data.frame(datDemo, RASTotalScoreF1, RASTotalScoreF2, RASTotalScoreF3, RASTotalScoreF5, INQTotalScoreF1, INQTotalScoreF2, SISTotalScoreF1, SISTotalScoreF2, SSMITotalScore)
+dim(datAdultAnalysis)
+
 #Need code gender, race, sexual orientation, edu, employment, RelationshipStatus as binary
-#Gender: 2 = 1, 1 = 0
-#Race: 7 = 0, all else 1
-#Sex Orien: 3 = 0, all else 1
+#Gender: 2 = 1, 1 = 0 female
+#Race: 7 = 0, all else 1 non-white
+#Sex Orien: 3 = 0, all else 1 sexual minrotiry
 #Edu: 2 = 1, all else = 0; high school over lower for one
 #Employment 1 = 1 else = 0; unemployed versus everyone else
-#Relationship Status: 1,2,3,4 = 1 else = 0
+#Relationship Status: 1,2,3,4 = 1 else = 0 single
 
 
 datAdultAnalysis$Gender = ifelse(datAdultAnalysis$Gender == 2,1, 0)
 datAdultAnalysis$Race = ifelse(datAdultAnalysis$Race == 7,0, 1)
 datAdultAnalysis$SexualOrientation = ifelse(datAdultAnalysis$SexualOrientation == 3,0, 1)
-datAdultAnalysis$Edu = ifelse(datAdultAnalysis$Edu == 2,1, 0)
+datAdultAnalysis$Edu = ifelse(datAdultAnalysis$Edu <= 2,1, 0)
 datAdultAnalysis$Employment = ifelse(datAdultAnalysis$Employment == 1,1, 0)
-
 
 datAdultAnalysis$RelationshipStatus = ifelse(datAdultAnalysis$RelationshipStatus <= 4, 1, 0)
 describe.factor(datAdultAnalysis$RelationshipStatus)
-
-
 # For the complete data set I need to drop SIS, because there is a ton of missing data
-datAdultAnalysisComplete = datAdultAnalysis
-datAdultAnalysisComplete$SISTotalScore = NULL
-datAdultAnalysisComplete = na.omit(datAdultAnalysisComplete)
+dim(datAdultAnalysis)
+describe.factor(datAdultAnalysis$SISTotalScoreF2)
+datAdultAnalysis$SISTotalScoreF2 = NULL
+ 
+```
+Missing data
+```{r}
 
-### Create data for t-tests
+datAdultAnalysisComplete = na.omit(datAdultAnalysis)
+dim(datAdultAnalysisComplete)[1]
+
+## Getting the percentage of data missing for each variable across
+dim(datAdultAnalysis)[1]
+## Calculating how much data is missing
+1-(dim(datAdultAnalysisComplete)[1]/dim(datAdultAnalysis)[1])
+
+### Get number of people at each time point
 datAdultAnalysisCompletePre = subset(datAdultAnalysisComplete, Time == 0) 
 
-head(datAdultAnalysisCompletePre)
+dim(datAdultAnalysisCompletePre)
 
 datAdultAnalysisCompletePost = subset(datAdultAnalysisComplete, Time == 1) 
-head(datAdultAnalysisCompletePost)
-datAdultAnalysisCompletePost
+dim(datAdultAnalysisCompletePost)
 
-datAdultAnalysisCompleteT.test = merge(datAdultAnalysisCompletePre, datAdultAnalysisCompletePost, by = "ID", all.x = TRUE)
+### With missing
+describe.factor(datAdultAnalysis$Time)
 
-datAdultAnalysisCompleteT.testComplete = na.omit(datAdultAnalysisCompleteT.test)
-dim(datAdultAnalysisCompleteT.testComplete)
 
-write.csv(datAdultAnalysis, "EnhancedDataSet.csv", row.names = FALSE)
+describe.factor(datAdultAnalysis$ID)
 
-m = 10
-datAdultAnalysisImpute = amelia(m = m, datAdultAnalysis, noms = c("Gender", "Race", "Edu", "SexualOrientation", "RelationshipStatus", "Employment"), idvars = c("ID", "Treatment"), ts = "Time")
+datAdultAnalysis = datAdultAnalysis[order(datAdultAnalysis$ID),]
 
-compare.density(datAdultAnalysisImpute, var = "RASTotalScore")
-compare.density(datAdultAnalysisImpute, var = "INQTotalScore")
-compare.density(datAdultAnalysisImpute, var = "SSMITotalScore")
-compare.density(datAdultAnalysisImpute, var = "SISTotalScore")
 
-summary(datAdultAnalysisImpute)
+library(MissMech)
 
-datAnalysisAll = lapply(1:m, function(x){datAdultAnalysisImpute$imputations[[x]]})
+head(datAdultAnalysis)
+dim(datAdultAnalysis)
+TestMCARNormality(datAdultAnalysis)
 ```
-Multilevel 
 
-#######
-Check randomization with no imputed, because you 
+
+#####################
+Checking descriptives at each time point
+#####################
 ```{r}
-randomOutputComplete = multinom(Treatment ~ Age + factor(Gender) + factor(Race)+ factor(SexualOrientation)+ factor(Edu)+ factor(RelationshipStatus)+ factor(Employment), data =  datAdultAnalysisComplete)
-randomOutputComplete = summary(randomOutputComplete)
-coefs1 = randomOutputComplete$coefficients[1,]
-coefs2 = randomOutputComplete$coefficients[2,]  
-ses1 = randomOutputComplete$standard.errors[1,]
-ses2 = randomOutputComplete$standard.errors[2,]
+datAdultAnalysisBase = subset(datAdultAnalysis, Time == 0)
+dim(datAdultAnalysisBase)
+describe(datAdultAnalysisBase)
+describe.factor(datAdultAnalysisBase$Gender)
+describe.factor(datAdultAnalysisBase$Race)
+describe.factor(datAdultAnalysisBase$RelationshipStatus)
+describe.factor(datAdultAnalysisBase$Edu)
+describe.factor(datAdultAnalysisBase$Employment)
+describe.factor(datAdultAnalysisBase$Treatment)
 
-funPvalue  = function(x,y){
-  z_stat = (x/y)
-  pvalue = 2*pnorm(-abs(z_stat))
-  all = list("z_stat" = z_stat, "pvalue" = pvalue)
-  return(all)
-}
+round(apply(datAdultAnalysisBase, 2, sd, na.rm = TRUE),2)
 
-coefsSes1 = funPvalue(coefs1, ses1)
-coefsSes1
 
-coefsSes2 = funPvalue(coefs2, ses2)
-coefsSes2 
+# Post
+datAdultAnalysisPost = subset(datAdultAnalysis, Time == 1)
+dim(datAdultAnalysisPost)
+describe(datAdultAnalysisPost)
+describe.factor(datAdultAnalysisPost$Gender)
+describe.factor(datAdultAnalysisPost$Race)
+describe.factor(datAdultAnalysisPost$RelationshipStatus)
+describe.factor(datAdultAnalysisPost$Edu)
+describe.factor(datAdultAnalysisPost$Employment)
 
+round(apply(datAdultAnalysisPost, 2, sd, na.rm = TRUE),2)
+
+
+# Get percentage of missing values
+library(ForImp)
+missingness(datAdultAnalysis)
 ```
-########################
-Imputed analysese below
-
-Descriptives for base
+Just see if you can check out the mean differences over time for each treatment
 ```{r}
-datAnalysisAllDes = lapply(1:m, function(x){subset(datAnalysisAll[[x]], Time == 0)})
-
-
-for(i in 1:m){
-  datAnalysisAllDes[[i]]$Treatment= datAnalysisAllDes[[i]]$Treatment =NULL
-}
-
-
-mean.out = NULL
-for(i in 1:m) {
-  mean.out[[i]] = apply(datAnalysisAllDes[[i]], 2, mean)
-  mean.out[[i]] = data.frame(mean.out)
-}
-
-
-descFun = function(x){
-  x = data.frame(t(x))
-}
-mean.out = descFun(mean.out)
-
-
-# now get sds
-sd.out = NULL
-for(i in 1:m) {
-  sd.out[[i]] = apply(datAnalysisAllDes[[i]], 2, sd)
-  sd.out = data.frame(sd.out)
-}
-sd.out = descFun(sd.out)
-mean.sd.out= mi.meld(mean.out, sd.out)
-mean.sd.out
+compmeans(datAdultAnalysis$RASTotalScoreF1, datAdultAnalysis$Time)
 ```
-Descriptives for post
+
+
+Here I am checking the randomization. Using three logisitic regression comparing T1 versus T2 across covariates at baseline, then T1 versus T3 and finally T2 versus T3.
+
+There is significant in relationship status between treatment two and three for relationship status.  Single people are more likely to be in treatment two relative to treatement three 
 ```{r}
+datAdultRandomT12 = subset(datAdultAnalysisComplete, Time == 0 & Treatment == 1  | Treatment == 2)
+datAdultRandomT12$Treatment = factor(datAdultRandomT12$Treatment)
+datAdultRandomT12$Treatment == ifelse(datAdultRandomT12$Treatment == 1, 1, 0)
+
+modelT12 = glm(Treatment ~  Age + Gender + Race + SexualOrientation + RelationshipStatus + Edu + Employment + RASTotalScoreF1+ RASTotalScoreF2+ RASTotalScoreF3+ RASTotalScoreF5+ INQTotalScoreF1+ INQTotalScoreF2+ SSMITotalScore+ SISTotalScoreF1, family = "binomial", data = datAdultRandomT12)
+
+summary(modelT12)
+
+datAdultRandomT13 = subset(datAdultAnalysisComplete, Time == 0 & Treatment == 1  | Treatment == 3)
+datAdultRandomT13$Treatment = factor(datAdultRandomT13$Treatment)
+datAdultRandomT13$Treatment == ifelse(datAdultRandomT13$Treatment == 1, 1, 0)
 
 
-datAnalysisAllDes = lapply(1:m, function(x){subset(datAnalysisAll[[x]], Time == 1)})
+modelT13 = glm(Treatment ~  Age + Gender + Race + SexualOrientation + RelationshipStatus + Edu + Employment + RASTotalScoreF1+ RASTotalScoreF2+ RASTotalScoreF3+ RASTotalScoreF5+ INQTotalScoreF1+ INQTotalScoreF2+ SSMITotalScore+ SISTotalScoreF1, data = datAdultRandomT13, family = "binomial")
 
-for(i in 1:m){
-  datAnalysisAllDes[[i]]$Treatment= datAnalysisAllDes[[i]]$Treatment =NULL
-}
-
-mean.out = NULL
-for(i in 1:m) {
-  mean.out[[i]] = apply(datAnalysisAllDes[[i]], 2, mean)
-  mean.out = data.frame(mean.out)
-}
+summary(modelT13)
 
 
-descFun = function(x){
-  x = data.frame(t(x))
-}
-mean.out = descFun(mean.out)
+datAdultRandomT23 = subset(datAdultAnalysisComplete, Time == 0 & Treatment == 2  | Treatment == 3)
+datAdultRandomT23$Treatment = factor(datAdultRandomT23$Treatment)
+datAdultRandomT23$Treatment == ifelse(datAdultRandomT23$Treatment == 2, 1, 0)
 
 
-# now get sds
-sd.out = NULL
-for(i in 1:m) {
-  sd.out[[i]] = apply(datAnalysisAllDes[[i]], 2, sd)
-  sd.out = data.frame(sd.out)
-}
-sd.out = descFun(sd.out)
+modelT23 = glm(Treatment ~  Age + Gender + Race + SexualOrientation + RelationshipStatus + Edu + Employment + RASTotalScoreF1+ RASTotalScoreF2+ RASTotalScoreF3+ RASTotalScoreF5+ INQTotalScoreF1+ INQTotalScoreF2+ SSMITotalScore+ SISTotalScoreF1, data = datAdultRandomT23, family = "binomial")
 
-mean.sd.out= mi.meld(mean.out, sd.out)
-mean.sd.out
-
+summary(modelT23)
 ```
 ################################################
 Multilevel with treatment only with imputed data
 ################################################
+Regular, standardized, percentage change and sens
 ```{r, include=FALSE}
-datAnalysisAll = lapply(1:m, function(x){datAdultAnalysisImpute$imputations[[x]]})
+dim(datAdultAnalysisComplete)
 
-datAnalysisT1 = NULL
-datAnalysisT2 = NULL
-datAnalysisT3 = NULL
+### Scale the outcomes
+head(datAdultAnalysisComplete[,11:18])
+scale_outcomes = scale(datAdultAnalysisComplete[,11:18])
+colMeans(scale_outcomes)
+apply(scale_outcomes, 2, sd)
 
-for(i in 1:m){
-  datAnalysisT1[[i]] = subset(datAnalysisAll[[i]], Treatment == 1)
-  datAnalysisT2[[i]] = subset(datAnalysisAll[[i]], Treatment == 2)
-  datAnalysisT3[[i]] = subset(datAnalysisAll[[i]], Treatment == 3)
-}
+### Get the log of the outcomes
+head(datAdultAnalysisComplete[,11:18])
+
+log_outcomes= log(datAdultAnalysisComplete[,11:18])
+
+datAdultAnalysisComplete = data.frame(datAdultAnalysisComplete, scale_outcomes, log_outcomes)
+
+datAnalysisT1 = subset(datAdultAnalysisComplete, Treatment == 1)
+datAnalysisT2 = subset(datAdultAnalysisComplete, Treatment == 2)
+datAnalysisT3 = subset(datAdultAnalysisComplete, Treatment == 3)
+
+head(datAdultAnalysisComplete$SSMITotalScore.2)
+
+```
+
+###############
+RASF1 Time and T1
+###############
+```{r, echo=FALSE}
+output_reg = lmer(RASTotalScoreF1 ~ Time + (1 | ID), data  = datAnalysisT1)
+summary(output_reg)
+confint(output_reg)
+output_stand = lmer(RASTotalScoreF1.1 ~ Time + (1 | ID), data  = datAnalysisT1)
+summary(output_stand)
+output_log = lmer(RASTotalScoreF1.2 ~ Time + (1 | ID), data  = datAnalysisT1)
+summary(output_log)
 
 
+uninstall.packages("lmerTest")
+output_reg = lmer(RASTotalScoreF1 ~ Time + (1 | ID), data  = datAnalysisT1)
+konfound(output_reg, Time)
+```
+
+###############
+RASF1 Time and T2
+###############
+```{r, echo=FALSE}
+install.packages("lmerTest")
+library(lmerTest)
+output_reg = lmer(RASTotalScoreF1 ~ Time + (1 | ID), data  = datAnalysisT2)
+summary(output_reg)
+confint(output_reg)
+output_stand = lmer(RASTotalScoreF1.1 ~ Time + (1 | ID), data  = datAnalysisT2)
+summary(output_stand)
+output_log = lmer(RASTotalScoreF1.2 ~ Time + (1 | ID), data  = datAnalysisT2)
+summary(output_log)
+
+
+uninstall.packages("lmerTest")
+output_reg = lmer(RASTotalScoreF1 ~ Time + (1 | ID), data  = datAnalysisT2)
+konfound(output_reg, Time)
 
 ```
 ###############
-RAS Time and T1
+RASF1 Time and T3
 ###############
-```{r}
-output = list()
-outputReg = list()
-coef_output =  NULL
-se_output = NULL
-rSquared = NULL
-stdBeta = NULL
-stdCoef = NULL
-stdSe = NULL
+```{r, echo=FALSE}
+install.packages("lmerTest")
+library(lmerTest)
+output_reg = lmer(RASTotalScoreF1 ~ Time + (1 | ID), data  = datAnalysisT3)
+summary(output_reg)
+confint(output_reg)
+output_stand = lmer(RASTotalScoreF1.1 ~ Time + (1 | ID), data  = datAnalysisT3)
+summary(output_stand)
+output_log = lmer(RASTotalScoreF1.2 ~ Time + (1 | ID), data  = datAnalysisT3)
+summary(output_log)
 
 
-for(i in 1:m){
-  output[[i]] = lmer(RASTotalScore ~ Time + (1 | ID), data  = datAnalysisT1[[i]])
-  outputReg[[i]] = output[[i]]
-  stdBeta[[i]] = std.coef(output[[i]], partial.sd = TRUE) 
-  stdCoef[[i]] = stdBeta[[i]][2,1]
-  stdSe[[i]] = stdBeta[[i]][2,2]
-  rSquared[[i]] = r.squaredGLMM(output[[i]])
-  output[[i]] = summary(output[[i]])
-  coef_output[[i]] = output[[i]]$coefficients[,1]
-  se_output[[i]] = output[[i]]$coefficients[,2]
-}
-coef_output = data.frame(coef_output)
-coef_output
-quickTrans = function(x){
-  x = data.frame(x)
-  x = t(x)
-  x = data.frame(x)
-}
-coef_output = quickTrans(coef_output)
-se_output = quickTrans(se_output)
-
-stdBetaOutput = data.frame(stdCoef)
-stdSeOutput = data.frame(stdSe)
-
-coef_output = data.frame(coef_output, stdBetaOutput)
-se_output = data.frame(se_output, stdSeOutput)
-
-# Figure out the degrees of freedom 
-
-#coefsAll = mi.meld(q = coef_output, se = se_output)
-
-meldAllT_stat = function(x,y){
-  coefsAll = mi.meld(q = x, se = y)
-  coefs1 = t(data.frame(coefsAll$q.mi))
-  ses1 = t(data.frame(coefsAll$se.mi))
-  z_stat = coefs1/ses1
-  p = 2*pnorm(-abs(z_stat))
-  return(data.frame(coefs1, ses1, z_stat, p))
-}
-
-results = meldAllT_stat(coef_output, se_output)
-round(results,3)
+uninstall.packages("lmerTest")
+output_reg = lmer(RASTotalScoreF1 ~ Time + (1 | ID), data  = datAnalysisT3)
+konfound(output_reg, Time)
 ```
 ###############
-RAS Time and T2
+RASF2 Time and T1
 ###############
-```{r}
-output = list()
-outputReg = list()
-coef_output =  NULL
-se_output = NULL
-rSquared = NULL
-stdBeta = NULL
-stdCoef = NULL
-stdSe = NULL
+```{r, echo=FALSE}
+install.packages("lmerTest")
+library(lmerTest)
+output_reg = lmer(RASTotalScoreF2 ~ Time + (1 | ID), data  = datAnalysisT1)
+summary(output_reg)
+confint(output_reg)
+output_stand = lmer(RASTotalScoreF2.1 ~ Time + (1 | ID), data  = datAnalysisT1)
+summary(output_stand)
+output_log = lmer(RASTotalScoreF2.2 ~ Time + (1 | ID), data  = datAnalysisT1)
+summary(output_log)
 
 
-for(i in 1:m){
-  output[[i]] = lmer(RASTotalScore ~ Time + (1 | ID), data  = datAnalysisT2[[i]])
-  outputReg[[i]] = output[[i]]
-  stdBeta[[i]] = std.coef(output[[i]], partial.sd = TRUE) 
-  stdCoef[[i]] = stdBeta[[i]][2,1]
-  stdSe[[i]] = stdBeta[[i]][2,2]
-  rSquared[[i]] = r.squaredGLMM(output[[i]])
-  output[[i]] = summary(output[[i]])
-  coef_output[[i]] = output[[i]]$coefficients[,1]
-  se_output[[i]] = output[[i]]$coefficients[,2]
-}
-coef_output = data.frame(coef_output)
-coef_output
-quickTrans = function(x){
-  x = data.frame(x)
-  x = t(x)
-  x = data.frame(x)
-}
-coef_output = quickTrans(coef_output)
-se_output = quickTrans(se_output)
-
-stdBetaOutput = data.frame(stdCoef)
-stdSeOutput = data.frame(stdSe)
-
-coef_output = data.frame(coef_output, stdBetaOutput)
-se_output = data.frame(se_output, stdSeOutput)
-
-# Figure out the degrees of freedom 
-
-#coefsAll = mi.meld(q = coef_output, se = se_output)
-
-meldAllT_stat = function(x,y){
-  coefsAll = mi.meld(q = x, se = y)
-  coefs1 = t(data.frame(coefsAll$q.mi))
-  ses1 = t(data.frame(coefsAll$se.mi))
-  z_stat = coefs1/ses1
-  p = 2*pnorm(-abs(z_stat))
-  return(data.frame(coefs1, ses1, z_stat, p))
-}
-
-results = meldAllT_stat(coef_output, se_output)
-round(results,3)
+uninstall.packages("lmerTest")
+output_reg = lmer(RASTotalScoreF2 ~ Time + (1 | ID), data  = datAnalysisT1)
+konfound(output_reg, Time)
 ```
 ###############
-RAS Time and T3
+RASF2 Time and T2
 ###############
-```{r}
-output = list()
-outputReg = list()
-coef_output =  NULL
-se_output = NULL
-rSquared = NULL
-stdBeta = NULL
-stdCoef = NULL
-stdSe = NULL
+```{r, echo=FALSE}
+install.packages("lmerTest")
+library(lmerTest)
+output_reg = lmer(RASTotalScoreF2 ~ Time + (1 | ID), data  = datAnalysisT2)
+summary(output_reg)
+confint(output_reg)
+output_stand = lmer(RASTotalScoreF2.1 ~ Time + (1 | ID), data  = datAnalysisT2)
+summary(output_stand)
+output_log = lmer(RASTotalScoreF2.2 ~ Time + (1 | ID), data  = datAnalysisT2)
+summary(output_log)
 
 
-for(i in 1:m){
-  output[[i]] = lmer(RASTotalScore ~ Time + (1 | ID), data  = datAnalysisT3[[i]])
-  outputReg[[i]] = output[[i]]
-  stdBeta[[i]] = std.coef(output[[i]], partial.sd = TRUE) 
-  stdCoef[[i]] = stdBeta[[i]][2,1]
-  stdSe[[i]] = stdBeta[[i]][2,2]
-  rSquared[[i]] = r.squaredGLMM(output[[i]])
-  output[[i]] = summary(output[[i]])
-  coef_output[[i]] = output[[i]]$coefficients[,1]
-  se_output[[i]] = output[[i]]$coefficients[,2]
-}
-coef_output = data.frame(coef_output)
-coef_output
-quickTrans = function(x){
-  x = data.frame(x)
-  x = t(x)
-  x = data.frame(x)
-}
-coef_output = quickTrans(coef_output)
-se_output = quickTrans(se_output)
+uninstall.packages("lmerTest")
+output_reg = lmer(RASTotalScoreF2 ~ Time + (1 | ID), data  = datAnalysisT2)
+konfound(output_reg, Time)
+```
 
-stdBetaOutput = data.frame(stdCoef)
-stdSeOutput = data.frame(stdSe)
-
-coef_output = data.frame(coef_output, stdBetaOutput)
-se_output = data.frame(se_output, stdSeOutput)
+###############
+RASF2 Time and T3
+###############
+```{r, echo=FALSE}
+install.packages("lmerTest")
+library(lmerTest)
+output_reg = lmer(RASTotalScoreF1 ~ Time + (1 | ID), data  = datAnalysisT3)
+summary(output_reg)
+confint(output_reg)
+output_stand = lmer(RASTotalScoreF1.1 ~ Time + (1 | ID), data  = datAnalysisT3)
+summary(output_stand)
+output_log = lmer(RASTotalScoreF1.2 ~ Time + (1 | ID), data  = datAnalysisT3)
+summary(output_log)
 
 
-meldAllT_stat = function(x,y){
-  coefsAll = mi.meld(q = x, se = y)
-  coefs1 = t(data.frame(coefsAll$q.mi))
-  ses1 = t(data.frame(coefsAll$se.mi))
-  z_stat = coefs1/ses1
-  p = 2*pnorm(-abs(z_stat))
-  return(data.frame(coefs1, ses1, z_stat, p))
-}
-
-results = meldAllT_stat(coef_output, se_output)
-round(results,3)
+uninstall.packages("lmerTest")
+output_reg = lmer(RASTotalScoreF1 ~ Time + (1 | ID), data  = datAnalysisT3)
+konfound(output_reg, Time)
 ```
 ###############
-INQ Time and T1
+RASF3 Time and T1
 ###############
-```{r}
-output = list()
-outputReg = list()
-coef_output =  NULL
-se_output = NULL
-rSquared = NULL
-stdBeta = NULL
-stdCoef = NULL
-stdSe = NULL
+```{r, echo=FALSE}
+install.packages("lmerTest")
+library(lmerTest)
+output_reg = lmer(RASTotalScoreF3 ~ Time + (1 | ID), data  = datAnalysisT1)
+summary(output_reg)
+confint(output_reg)
+output_stand = lmer(RASTotalScoreF3.1 ~ Time + (1 | ID), data  = datAnalysisT1)
+summary(output_stand)
+output_log = lmer(RASTotalScoreF3.2 ~ Time + (1 | ID), data  = datAnalysisT1)
+summary(output_log)
 
 
-for(i in 1:m){
-  output[[i]] = lmer(INQTotalScore ~ Time + (1 | ID), data  = datAnalysisT1[[i]])
-  outputReg[[i]] = output[[i]]
-  stdBeta[[i]] = std.coef(output[[i]], partial.sd = TRUE) 
-  stdCoef[[i]] = stdBeta[[i]][2,1]
-  stdSe[[i]] = stdBeta[[i]][2,2]
-  rSquared[[i]] = r.squaredGLMM(output[[i]])
-  output[[i]] = summary(output[[i]])
-  coef_output[[i]] = output[[i]]$coefficients[,1]
-  se_output[[i]] = output[[i]]$coefficients[,2]
-}
-coef_output = data.frame(coef_output)
-coef_output
-quickTrans = function(x){
-  x = data.frame(x)
-  x = t(x)
-  x = data.frame(x)
-}
-coef_output = quickTrans(coef_output)
-se_output = quickTrans(se_output)
-
-stdBetaOutput = data.frame(stdCoef)
-stdSeOutput = data.frame(stdSe)
-
-coef_output = data.frame(coef_output, stdBetaOutput)
-se_output = data.frame(se_output, stdSeOutput)
-
-# Figure out the degrees of freedom 
-
-#coefsAll = mi.meld(q = coef_output, se = se_output)
-
-meldAllT_stat = function(x,y){
-  coefsAll = mi.meld(q = x, se = y)
-  coefs1 = t(data.frame(coefsAll$q.mi))
-  ses1 = t(data.frame(coefsAll$se.mi))
-  z_stat = coefs1/ses1
-  p = 2*pnorm(-abs(z_stat))
-  return(data.frame(coefs1, ses1, z_stat, p))
-}
-
-results = meldAllT_stat(coef_output, se_output)
-round(results,3)
+uninstall.packages("lmerTest")
+output_reg = lmer(RASTotalScoreF3 ~ Time + (1 | ID), data  = datAnalysisT1)
+konfound(output_reg, Time)
 ```
 ###############
-INQ Time and T2
+RASF3 Time and T2
 ###############
-```{r}
-output = list()
-outputReg = list()
-coef_output =  NULL
-se_output = NULL
-rSquared = NULL
-stdBeta = NULL
-stdCoef = NULL
-stdSe = NULL
+```{r, echo=FALSE}
+install.packages("lmerTest")
+library(lmerTest)
+output_reg = lmer(RASTotalScoreF3 ~ Time + (1 | ID), data  = datAnalysisT2)
+summary(output_reg)
+confint(output_reg)
+output_stand = lmer(RASTotalScoreF3.1 ~ Time + (1 | ID), data  = datAnalysisT2)
+summary(output_stand)
+output_log = lmer(RASTotalScoreF3.2 ~ Time + (1 | ID), data  = datAnalysisT2)
+summary(output_log)
 
 
-for(i in 1:m){
-  output[[i]] = lmer(INQTotalScore ~ Time + (1 | ID), data  = datAnalysisT2[[i]])
-  outputReg[[i]] = output[[i]]
-  stdBeta[[i]] = std.coef(output[[i]], partial.sd = TRUE) 
-  stdCoef[[i]] = stdBeta[[i]][2,1]
-  stdSe[[i]] = stdBeta[[i]][2,2]
-  rSquared[[i]] = r.squaredGLMM(output[[i]])
-  output[[i]] = summary(output[[i]])
-  coef_output[[i]] = output[[i]]$coefficients[,1]
-  se_output[[i]] = output[[i]]$coefficients[,2]
-}
-coef_output = data.frame(coef_output)
-coef_output
-quickTrans = function(x){
-  x = data.frame(x)
-  x = t(x)
-  x = data.frame(x)
-}
-coef_output = quickTrans(coef_output)
-se_output = quickTrans(se_output)
-
-stdBetaOutput = data.frame(stdCoef)
-stdSeOutput = data.frame(stdSe)
-
-coef_output = data.frame(coef_output, stdBetaOutput)
-se_output = data.frame(se_output, stdSeOutput)
-
-# Figure out the degrees of freedom 
-
-#coefsAll = mi.meld(q = coef_output, se = se_output)
-
-meldAllT_stat = function(x,y){
-  coefsAll = mi.meld(q = x, se = y)
-  coefs1 = t(data.frame(coefsAll$q.mi))
-  ses1 = t(data.frame(coefsAll$se.mi))
-  z_stat = coefs1/ses1
-  p = 2*pnorm(-abs(z_stat))
-  return(data.frame(coefs1, ses1, z_stat, p))
-}
-
-results = meldAllT_stat(coef_output, se_output)
-round(results,3)
+uninstall.packages("lmerTest")
+output_reg = lmer(RASTotalScoreF3 ~ Time + (1 | ID), data  = datAnalysisT2)
+konfound(output_reg, Time)
 ```
 ###############
-INQ Time and T3
+RASF3 Time and T3
 ###############
-```{r}
-output = list()
-outputReg = list()
-coef_output =  NULL
-se_output = NULL
-rSquared = NULL
-stdBeta = NULL
-stdCoef = NULL
-stdSe = NULL
+```{r, echo=FALSE}
+install.packages("lmerTest")
+library(lmerTest)
+output_reg = lmer(RASTotalScoreF3 ~ Time + (1 | ID), data  = datAnalysisT3)
+summary(output_reg)
+confint(output_reg)
+output_stand = lmer(RASTotalScoreF3.1 ~ Time + (1 | ID), data  = datAnalysisT3)
+summary(output_stand)
+output_log = lmer(RASTotalScoreF3.2 ~ Time + (1 | ID), data  = datAnalysisT3)
+summary(output_log)
 
 
-for(i in 1:m){
-  output[[i]] = lmer(INQTotalScore ~ Time + (1 | ID), data  = datAnalysisT3[[i]])
-  outputReg[[i]] = output[[i]]
-  stdBeta[[i]] = std.coef(output[[i]], partial.sd = TRUE) 
-  stdCoef[[i]] = stdBeta[[i]][2,1]
-  stdSe[[i]] = stdBeta[[i]][2,2]
-  rSquared[[i]] = r.squaredGLMM(output[[i]])
-  output[[i]] = summary(output[[i]])
-  coef_output[[i]] = output[[i]]$coefficients[,1]
-  se_output[[i]] = output[[i]]$coefficients[,2]
-}
-coef_output = data.frame(coef_output)
-coef_output
-quickTrans = function(x){
-  x = data.frame(x)
-  x = t(x)
-  x = data.frame(x)
-}
-coef_output = quickTrans(coef_output)
-se_output = quickTrans(se_output)
+uninstall.packages("lmerTest")
+output_reg = lmer(RASTotalScoreF3 ~ Time + (1 | ID), data  = datAnalysisT3)
+konfound(output_reg, Time)
+```
 
-stdBetaOutput = data.frame(stdCoef)
-stdSeOutput = data.frame(stdSe)
+###############
+RASF5 Time and T1
+###############
+```{r, echo=FALSE}
+install.packages("lmerTest")
+library(lmerTest)
+output_reg = lmer(RASTotalScoreF5 ~ Time + (1 | ID), data  = datAnalysisT1)
+summary(output_reg)
+confint(output_reg)
+output_stand = lmer(RASTotalScoreF5.1 ~ Time + (1 | ID), data  = datAnalysisT1)
+summary(output_stand)
+output_log = lmer(RASTotalScoreF5.2 ~ Time + (1 | ID), data  = datAnalysisT1)
+summary(output_log)
 
-coef_output = data.frame(coef_output, stdBetaOutput)
-se_output = data.frame(se_output, stdSeOutput)
 
-# Figure out the degrees of freedom 
+uninstall.packages("lmerTest")
+output_reg = lmer(RASTotalScoreF5 ~ Time + (1 | ID), data  = datAnalysisT1)
+konfound(output_reg, Time)
+```
+###############
+RASF5 Time and T2
+###############
+```{r, echo=FALSE}
+install.packages("lmerTest")
+library(lmerTest)
+output_reg = lmer(RASTotalScoreF5 ~ Time + (1 | ID), data  = datAnalysisT2)
+summary(output_reg)
+confint(output_reg)
+output_stand = lmer(RASTotalScoreF5.1 ~ Time + (1 | ID), data  = datAnalysisT2)
+summary(output_stand)
+output_log = lmer(RASTotalScoreF5.2 ~ Time + (1 | ID), data  = datAnalysisT2)
+summary(output_log)
 
-#coefsAll = mi.meld(q = coef_output, se = se_output)
 
-meldAllT_stat = function(x,y){
-  coefsAll = mi.meld(q = x, se = y)
-  coefs1 = t(data.frame(coefsAll$q.mi))
-  ses1 = t(data.frame(coefsAll$se.mi))
-  z_stat = coefs1/ses1
-  p = 2*pnorm(-abs(z_stat))
-  return(data.frame(coefs1, ses1, z_stat, p))
-}
+uninstall.packages("lmerTest")
+output_reg = lmer(RASTotalScoreF5 ~ Time + (1 | ID), data  = datAnalysisT2)
+konfound(output_reg, Time)
+```
+###############
+RASF5 Time and T3
+###############
+```{r, echo=FALSE}
+install.packages("lmerTest")
+library(lmerTest)
+output_reg = lmer(RASTotalScoreF5 ~ Time + (1 | ID), data  = datAnalysisT3)
+summary(output_reg)
+confint(output_reg)
+output_stand = lmer(RASTotalScoreF5.1 ~ Time + (1 | ID), data  = datAnalysisT3)
+summary(output_stand)
+output_log = lmer(RASTotalScoreF5.2 ~ Time + (1 | ID), data  = datAnalysisT3)
+summary(output_log)
 
-results = meldAllT_stat(coef_output, se_output)
-round(results,3)
+
+uninstall.packages("lmerTest")
+output_reg = lmer(RASTotalScoreF5 ~ Time + (1 | ID), data  = datAnalysisT3)
+konfound(output_reg, Time)
+
+```
+###############
+INQF1 Time and T1
+###############
+```{r, echo=FALSE}
+install.packages("lmerTest")
+library(lmerTest)
+output_reg = lmer(INQTotalScoreF1 ~ Time + (1 | ID), data  = datAnalysisT1)
+summary(output_reg)
+confint(output_reg)
+output_stand = lmer(INQTotalScoreF1.1 ~ Time + (1 | ID), data  = datAnalysisT1)
+summary(output_stand)
+output_log = lmer(INQTotalScoreF1.2 ~ Time + (1 | ID), data  = datAnalysisT1)
+summary(output_log)
+
+
+uninstall.packages("lmerTest")
+output_reg = lmer(INQTotalScoreF1 ~ Time + (1 | ID), data  = datAnalysisT1)
+konfound(output_reg, Time)
+```
+
+###############
+INQF1 Time and T2
+###############
+```{r, echo=FALSE}
+install.packages("lmerTest")
+library(lmerTest)
+output_reg = lmer(INQTotalScoreF1 ~ Time + (1 | ID), data  = datAnalysisT2)
+summary(output_reg)
+confint(output_reg)
+output_stand = lmer(INQTotalScoreF1.1 ~ Time + (1 | ID), data  = datAnalysisT2)
+summary(output_stand)
+output_log = lmer(INQTotalScoreF1.2 ~ Time + (1 | ID), data  = datAnalysisT2)
+summary(output_log)
+
+
+uninstall.packages("lmerTest")
+output_reg = lmer(INQTotalScoreF1 ~ Time + (1 | ID), data  = datAnalysisT2)
+konfound(output_reg, Time)
+```
+###############
+INQF1 Time and T3
+###############
+```{r, echo=FALSE}
+install.packages("lmerTest")
+library(lmerTest)
+output_reg = lmer(INQTotalScoreF1 ~ Time + (1 | ID), data  = datAnalysisT3)
+summary(output_reg)
+confint(output_reg)
+output_stand = lmer(INQTotalScoreF1.1 ~ Time + (1 | ID), data  = datAnalysisT3)
+summary(output_stand)
+output_log = lmer(INQTotalScoreF1.2 ~ Time + (1 | ID), data  = datAnalysisT3)
+summary(output_log)
+
+
+uninstall.packages("lmerTest")
+output_reg = lmer(INQTotalScoreF1 ~ Time + (1 | ID), data  = datAnalysisT3)
+konfound(output_reg, Time)
+```
+###############
+INQF2 Time and T1
+###############
+```{r, echo=FALSE}
+install.packages("lmerTest")
+library(lmerTest)
+output_reg = lmer(INQTotalScoreF2 ~ Time + (1 | ID), data  = datAnalysisT1)
+summary(output_reg)
+confint(output_reg)
+output_stand = lmer(INQTotalScoreF2.1 ~ Time + (1 | ID), data  = datAnalysisT1)
+summary(output_stand)
+output_log = lmer(INQTotalScoreF2.2 ~ Time + (1 | ID), data  = datAnalysisT1)
+summary(output_log)
+
+
+uninstall.packages("lmerTest")
+output_reg = lmer(INQTotalScoreF2 ~ Time + (1 | ID), data  = datAnalysisT1)
+konfound(output_reg, Time)
+```
+
+###############
+INQF2 Time and T2
+###############
+```{r, echo=FALSE}
+install.packages("lmerTest")
+library(lmerTest)
+output_reg = lmer(INQTotalScoreF2 ~ Time + (1 | ID), data  = datAnalysisT2)
+summary(output_reg)
+confint(output_reg)
+output_stand = lmer(INQTotalScoreF2.1 ~ Time + (1 | ID), data  = datAnalysisT2)
+summary(output_stand)
+output_log = lmer(INQTotalScoreF2.2 ~ Time + (1 | ID), data  = datAnalysisT2)
+summary(output_log)
+
+
+uninstall.packages("lmerTest")
+output_reg = lmer(INQTotalScoreF2 ~ Time + (1 | ID), data  = datAnalysisT2)
+konfound(output_reg, Time)
+```
+###############
+INQF2 Time and T3
+###############
+```{r, echo=FALSE}
+install.packages("lmerTest")
+library(lmerTest)
+output_reg = lmer(INQTotalScoreF2 ~ Time + (1 | ID), data  = datAnalysisT3)
+summary(output_reg)
+confint(output_reg)
+output_stand = lmer(INQTotalScoreF2.1 ~ Time + (1 | ID), data  = datAnalysisT3)
+summary(output_stand)
+output_log = lmer(INQTotalScoreF2.2 ~ Time + (1 | ID), data  = datAnalysisT3)
+summary(output_log)
+
+
+uninstall.packages("lmerTest")
+output_reg = lmer(INQTotalScoreF2 ~ Time + (1 | ID), data  = datAnalysisT3)
+konfound(output_reg, Time)
 ```
 ###############
 SSMI Time and T1
 ###############
-```{r}
-output = list()
-outputReg = list()
-coef_output =  NULL
-se_output = NULL
-rSquared = NULL
-stdBeta = NULL
-stdCoef = NULL
-stdSe = NULL
+```{r, echo=FALSE}
+install.packages("lmerTest")
+library(lmerTest)
+output_reg = lmer(SSMITotalScore ~ Time + (1 | ID), data  = datAnalysisT1)
+summary(output_reg)
+confint(output_reg)
+output_stand = lmer(SSMITotalScore.1 ~ Time + (1 | ID), data  = datAnalysisT1)
+summary(output_stand)
+output_log = lmer(SSMITotalScore.2 ~ Time + (1 | ID), data  = datAnalysisT1)
+summary(output_log)
 
 
-for(i in 1:m){
-  output[[i]] = lmer(SSMITotalScore ~ Time + (1 | ID), data  = datAnalysisT1[[i]])
-  outputReg[[i]] = output[[i]]
-  stdBeta[[i]] = std.coef(output[[i]], partial.sd = TRUE) 
-  stdCoef[[i]] = stdBeta[[i]][2,1]
-  stdSe[[i]] = stdBeta[[i]][2,2]
-  rSquared[[i]] = r.squaredGLMM(output[[i]])
-  output[[i]] = summary(output[[i]])
-  coef_output[[i]] = output[[i]]$coefficients[,1]
-  se_output[[i]] = output[[i]]$coefficients[,2]
-}
-coef_output = data.frame(coef_output)
-coef_output
-quickTrans = function(x){
-  x = data.frame(x)
-  x = t(x)
-  x = data.frame(x)
-}
-coef_output = quickTrans(coef_output)
-se_output = quickTrans(se_output)
-
-stdBetaOutput = data.frame(stdCoef)
-stdSeOutput = data.frame(stdSe)
-
-coef_output = data.frame(coef_output, stdBetaOutput)
-se_output = data.frame(se_output, stdSeOutput)
-
-# Figure out the degrees of freedom 
-
-#coefsAll = mi.meld(q = coef_output, se = se_output)
-
-meldAllT_stat = function(x,y){
-  coefsAll = mi.meld(q = x, se = y)
-  coefs1 = t(data.frame(coefsAll$q.mi))
-  ses1 = t(data.frame(coefsAll$se.mi))
-  z_stat = coefs1/ses1
-  p = 2*pnorm(-abs(z_stat))
-  return(data.frame(coefs1, ses1, z_stat, p))
-}
-
-results = meldAllT_stat(coef_output, se_output)
-round(results,3)
+uninstall.packages("lmerTest")
+output_reg = lmer(SSMITotalScore ~ Time + (1 | ID), data  = datAnalysisT1)
+konfound(output_reg, Time)
 ```
 ###############
 SSMI Time and T2
 ###############
-```{r}
-output = list()
-outputReg = list()
-coef_output =  NULL
-se_output = NULL
-rSquared = NULL
-stdBeta = NULL
-stdCoef = NULL
-stdSe = NULL
+```{r, echo=FALSE}
+install.packages("lmerTest")
+library(lmerTest)
+output_reg = lmer(SSMITotalScore ~ Time + (1 | ID), data  = datAnalysisT2)
+summary(output_reg)
+confint(output_reg)
+output_stand = lmer(SSMITotalScore.1 ~ Time + (1 | ID), data  = datAnalysisT2)
+summary(output_stand)
+output_log = lmer(SSMITotalScore.2 ~ Time + (1 | ID), data  = datAnalysisT2)
+summary(output_log)
 
 
-for(i in 1:m){
-  output[[i]] = lmer(SSMITotalScore ~ Time + (1 | ID), data  = datAnalysisT2[[i]])
-  outputReg[[i]] = output[[i]]
-  stdBeta[[i]] = std.coef(output[[i]], partial.sd = TRUE) 
-  stdCoef[[i]] = stdBeta[[i]][2,1]
-  stdSe[[i]] = stdBeta[[i]][2,2]
-  rSquared[[i]] = r.squaredGLMM(output[[i]])
-  output[[i]] = summary(output[[i]])
-  coef_output[[i]] = output[[i]]$coefficients[,1]
-  se_output[[i]] = output[[i]]$coefficients[,2]
-}
-coef_output = data.frame(coef_output)
-coef_output
-quickTrans = function(x){
-  x = data.frame(x)
-  x = t(x)
-  x = data.frame(x)
-}
-coef_output = quickTrans(coef_output)
-se_output = quickTrans(se_output)
-
-stdBetaOutput = data.frame(stdCoef)
-stdSeOutput = data.frame(stdSe)
-
-coef_output = data.frame(coef_output, stdBetaOutput)
-se_output = data.frame(se_output, stdSeOutput)
-
-# Figure out the degrees of freedom 
-
-#coefsAll = mi.meld(q = coef_output, se = se_output)
-
-meldAllT_stat = function(x,y){
-  coefsAll = mi.meld(q = x, se = y)
-  coefs1 = t(data.frame(coefsAll$q.mi))
-  ses1 = t(data.frame(coefsAll$se.mi))
-  z_stat = coefs1/ses1
-  p = 2*pnorm(-abs(z_stat))
-  return(data.frame(coefs1, ses1, z_stat, p))
-}
-
-results = meldAllT_stat(coef_output, se_output)
-round(results,3)
+uninstall.packages("lmerTest")
+output_reg = lmer(SSMITotalScore ~ Time + (1 | ID), data  = datAnalysisT2)
+konfound(output_reg, Time)
 ```
 ###############
 SSMI Time and T3
 ###############
-```{r}
-output = list()
-outputReg = list()
-coef_output =  NULL
-se_output = NULL
-rSquared = NULL
-stdBeta = NULL
-stdCoef = NULL
-stdSe = NULL
+```{r, echo=FALSE}
+install.packages("lmerTest")
+library(lmerTest)
+output_reg = lmer(SSMITotalScore ~ Time + (1 | ID), data  = datAnalysisT3)
+summary(output_reg)
+confint(output_reg)
+output_stand = lmer(SSMITotalScore.1 ~ Time + (1 | ID), data  = datAnalysisT3)
+summary(output_stand)
+output_log = lmer(SSMITotalScore.2 ~ Time + (1 | ID), data  = datAnalysisT3)
+summary(output_log)
 
 
-for(i in 1:m){
-  output[[i]] = lmer(SSMITotalScore ~ Time + (1 | ID), data  = datAnalysisT3[[i]])
-  outputReg[[i]] = output[[i]]
-  stdBeta[[i]] = std.coef(output[[i]], partial.sd = TRUE) 
-  stdCoef[[i]] = stdBeta[[i]][2,1]
-  stdSe[[i]] = stdBeta[[i]][2,2]
-  rSquared[[i]] = r.squaredGLMM(output[[i]])
-  output[[i]] = summary(output[[i]])
-  coef_output[[i]] = output[[i]]$coefficients[,1]
-  se_output[[i]] = output[[i]]$coefficients[,2]
-}
-coef_output = data.frame(coef_output)
-coef_output
-quickTrans = function(x){
-  x = data.frame(x)
-  x = t(x)
-  x = data.frame(x)
-}
-coef_output = quickTrans(coef_output)
-se_output = quickTrans(se_output)
-
-stdBetaOutput = data.frame(stdCoef)
-stdSeOutput = data.frame(stdSe)
-
-coef_output = data.frame(coef_output, stdBetaOutput)
-se_output = data.frame(se_output, stdSeOutput)
-
-# Figure out the degrees of freedom 
-
-#coefsAll = mi.meld(q = coef_output, se = se_output)
-
-meldAllT_stat = function(x,y){
-  coefsAll = mi.meld(q = x, se = y)
-  coefs1 = t(data.frame(coefsAll$q.mi))
-  ses1 = t(data.frame(coefsAll$se.mi))
-  z_stat = coefs1/ses1
-  p = 2*pnorm(-abs(z_stat))
-  return(data.frame(coefs1, ses1, z_stat, p))
-}
-
-results = meldAllT_stat(coef_output, se_output)
-round(results,3)
+uninstall.packages("lmerTest")
+output_reg = lmer(SSMITotalScore ~ Time + (1 | ID), data  = datAnalysisT3)
+konfound(output_reg, Time)
 ```
 ###############
-SIS Time and T1
+SISF1 Time and T1
 ###############
-```{r}
-output = list()
-outputReg = list()
-coef_output =  NULL
-se_output = NULL
-rSquared = NULL
-stdBeta = NULL
-stdCoef = NULL
-stdSe = NULL
+```{r, echo=FALSE}
+install.packages("lmerTest")
+library(lmerTest)
+output_reg = lmer(SISTotalScoreF1 ~ Time + (1 | ID), data  = datAnalysisT1)
+summary(output_reg)
+confint(output_reg)
+output_stand = lmer(SISTotalScoreF1.1 ~ Time + (1 | ID), data  = datAnalysisT1)
+summary(output_stand)
+output_log = lmer(SISTotalScoreF1.2 ~ Time + (1 | ID), data  = datAnalysisT1)
+summary(output_log)
 
 
-for(i in 1:m){
-  output[[i]] = lmer(SISTotalScore ~ Time + (1 | ID), data  = datAnalysisT1[[i]])
-  outputReg[[i]] = output[[i]]
-  stdBeta[[i]] = std.coef(output[[i]], partial.sd = TRUE) 
-  stdCoef[[i]] = stdBeta[[i]][2,1]
-  stdSe[[i]] = stdBeta[[i]][2,2]
-  rSquared[[i]] = r.squaredGLMM(output[[i]])
-  output[[i]] = summary(output[[i]])
-  coef_output[[i]] = output[[i]]$coefficients[,1]
-  se_output[[i]] = output[[i]]$coefficients[,2]
-}
-coef_output = data.frame(coef_output)
-coef_output
-quickTrans = function(x){
-  x = data.frame(x)
-  x = t(x)
-  x = data.frame(x)
-}
-coef_output = quickTrans(coef_output)
-se_output = quickTrans(se_output)
-
-stdBetaOutput = data.frame(stdCoef)
-stdSeOutput = data.frame(stdSe)
-
-coef_output = data.frame(coef_output, stdBetaOutput)
-se_output = data.frame(se_output, stdSeOutput)
-
-# Figure out the degrees of freedom 
-
-#coefsAll = mi.meld(q = coef_output, se = se_output)
-
-meldAllT_stat = function(x,y){
-  coefsAll = mi.meld(q = x, se = y)
-  coefs1 = t(data.frame(coefsAll$q.mi))
-  ses1 = t(data.frame(coefsAll$se.mi))
-  z_stat = coefs1/ses1
-  p = 2*pnorm(-abs(z_stat))
-  return(data.frame(coefs1, ses1, z_stat, p))
-}
-
-results = meldAllT_stat(coef_output, se_output)
-round(results,3)
+uninstall.packages("lmerTest")
+output_reg = lmer(SISTotalScoreF1 ~ Time + (1 | ID), data  = datAnalysisT1)
+konfound(output_reg, Time)
 ```
 ###############
-SIS Time and T2
+SISF1 Time and T2
 ###############
-```{r}
-output = list()
-outputReg = list()
-coef_output =  NULL
-se_output = NULL
-rSquared = NULL
-stdBeta = NULL
-stdCoef = NULL
-stdSe = NULL
+```{r, echo=FALSE}
+install.packages("lmerTest")
+library(lmerTest)
+output_reg = lmer(SISTotalScoreF1 ~ Time + (1 | ID), data  = datAnalysisT2)
+summary(output_reg)
+confint(output_reg)
+output_stand = lmer(SISTotalScoreF1.1 ~ Time + (1 | ID), data  = datAnalysisT2)
+summary(output_stand)
+output_log = lmer(SISTotalScoreF1.2 ~ Time + (1 | ID), data  = datAnalysisT2)
+summary(output_log)
 
 
-for(i in 1:m){
-  output[[i]] = lmer(SISTotalScore ~ Time + (1 | ID), data  = datAnalysisT2[[i]])
-  outputReg[[i]] = output[[i]]
-  stdBeta[[i]] = std.coef(output[[i]], partial.sd = TRUE) 
-  stdCoef[[i]] = stdBeta[[i]][2,1]
-  stdSe[[i]] = stdBeta[[i]][2,2]
-  rSquared[[i]] = r.squaredGLMM(output[[i]])
-  output[[i]] = summary(output[[i]])
-  coef_output[[i]] = output[[i]]$coefficients[,1]
-  se_output[[i]] = output[[i]]$coefficients[,2]
-}
-coef_output = data.frame(coef_output)
-coef_output
-quickTrans = function(x){
-  x = data.frame(x)
-  x = t(x)
-  x = data.frame(x)
-}
-coef_output = quickTrans(coef_output)
-se_output = quickTrans(se_output)
-
-stdBetaOutput = data.frame(stdCoef)
-stdSeOutput = data.frame(stdSe)
-
-coef_output = data.frame(coef_output, stdBetaOutput)
-se_output = data.frame(se_output, stdSeOutput)
-
-# Figure out the degrees of freedom 
-
-#coefsAll = mi.meld(q = coef_output, se = se_output)
-
-meldAllT_stat = function(x,y){
-  coefsAll = mi.meld(q = x, se = y)
-  coefs1 = t(data.frame(coefsAll$q.mi))
-  ses1 = t(data.frame(coefsAll$se.mi))
-  z_stat = coefs1/ses1
-  p = 2*pnorm(-abs(z_stat))
-  return(data.frame(coefs1, ses1, z_stat, p))
-}
-
-results = meldAllT_stat(coef_output, se_output)
-round(results,3)
-```
-###############
-SIS Time and T3
-###############
-```{r}
-output = list()
-outputReg = list()
-coef_output =  NULL
-se_output = NULL
-rSquared = NULL
-stdBeta = NULL
-stdCoef = NULL
-stdSe = NULL
-
-
-for(i in 1:m){
-  output[[i]] = lmer(SISTotalScore ~ Time + (1 | ID), data  = datAnalysisT3[[i]])
-  outputReg[[i]] = output[[i]]
-  stdBeta[[i]] = std.coef(output[[i]], partial.sd = TRUE) 
-  stdCoef[[i]] = stdBeta[[i]][2,1]
-  stdSe[[i]] = stdBeta[[i]][2,2]
-  rSquared[[i]] = r.squaredGLMM(output[[i]])
-  output[[i]] = summary(output[[i]])
-  coef_output[[i]] = output[[i]]$coefficients[,1]
-  se_output[[i]] = output[[i]]$coefficients[,2]
-}
-coef_output = data.frame(coef_output)
-coef_output
-quickTrans = function(x){
-  x = data.frame(x)
-  x = t(x)
-  x = data.frame(x)
-}
-coef_output = quickTrans(coef_output)
-se_output = quickTrans(se_output)
-
-stdBetaOutput = data.frame(stdCoef)
-stdSeOutput = data.frame(stdSe)
-
-coef_output = data.frame(coef_output, stdBetaOutput)
-se_output = data.frame(se_output, stdSeOutput)
-
-# Figure out the degrees of freedom 
-
-#coefsAll = mi.meld(q = coef_output, se = se_output)
-
-meldAllT_stat = function(x,y){
-  coefsAll = mi.meld(q = x, se = y)
-  coefs1 = t(data.frame(coefsAll$q.mi))
-  ses1 = t(data.frame(coefsAll$se.mi))
-  z_stat = coefs1/ses1
-  p = 2*pnorm(-abs(z_stat))
-  return(data.frame(coefs1, ses1, z_stat, p))
-}
-
-results = meldAllT_stat(coef_output, se_output)
-round(results,3)
+uninstall.packages("lmerTest")
+output_reg = lmer(SISTotalScoreF1 ~ Time + (1 | ID), data  = datAnalysisT2)
+konfound(output_reg, Time)
 ```
 
+###############
+SISF1 Time and T3
+###############
+```{r, echo=FALSE}
+install.packages("lmerTest")
+library(lmerTest)
+output_reg = lmer(SISTotalScoreF1 ~ Time + (1 | ID), data  = datAnalysisT3)
+summary(output_reg)
+confint(output_reg)
+output_stand = lmer(SISTotalScoreF1.1 ~ Time + (1 | ID), data  = datAnalysisT3)
+summary(output_stand)
+output_log = lmer(SISTotalScoreF1.2 ~ Time + (1 | ID), data  = datAnalysisT3)
+summary(output_log)
+
+
+
+uninstall.packages("lmerTest")
+output_reg = lmer(SISTotalScoreF1 ~ Time + (1 | ID), data  = datAnalysisT3)
+konfound(output_reg, Time)
+```
+##################################
+All treatmentments diff Score RASF1
+##################################
+```{r}
+install.packages("lmerTest")
+library(lmerTest)
+output_reg = lmer(RASTotalScoreF1 ~ RelationshipStatus  + Time*factor(Treatment) +  + (1 | ID), data  = datAdultAnalysisComplete)
+summary(output_reg)
+confint(output_reg)
+
+output_reg_stand = lmer(RASTotalScoreF1.1 ~ SexualOrientation + Time*factor(Treatment) +  + (1 | ID), data  = datAdultAnalysisComplete)
+summary(output_reg_stand)
+
+output_reg_log = lmer(RASTotalScoreF1.2 ~ SexualOrientation + Time*factor(Treatment) +  + (1 | ID), data  = datAdultAnalysisComplete)
+summary(output_reg_log)
+
+```
+RASF1 Contrasts 
+```{r}
+K = matrix(c(0, 0, 0, 1, -1, 0, 0, 0, 0, 0, 0, 0, 1, -1), ncol = 7, nrow = 2, byrow = TRUE)
+t = glht(output_reg, linfct = K)
+t_sum = summary(t)
+t_sum
+confint(t)
+
+t_stand = glht(output_reg_stand, linfct = K)
+t_stand_sum = summary(t_stand)
+t_stand_sum
+
+t_log = glht(output_reg_log, linfct = K)
+t_log_sum = summary(t_log)
+t_log_sum
+
+```
+
+##################################
+All treatmentments diff Score RASF2
+##################################
+```{r}
+output_reg = lmer(RASTotalScoreF2 ~ RelationshipStatus + RASTotalScoreF1  + Time*factor(Treatment) +  + (1 | ID), data  = datAdultAnalysisComplete)
+summary(output_reg)
+confint(output_reg)
+
+output_reg_stand = lmer(RASTotalScoreF2.1 ~  RASTotalScoreF1 + Time*factor(Treatment) +  + (1 | ID), data  = datAdultAnalysisComplete)
+summary(output_reg_stand)
+
+output_reg_log = lmer(RASTotalScoreF2.2 ~ RelationshipStatus + RASTotalScoreF1 + Time*factor(Treatment) +  + (1 | ID), data  = datAdultAnalysisComplete)
+summary(output_reg_log)
+
+```
+RASF2 Contrasts 
+```{r}
+K = matrix(c(0,0,0,0,0,0,1,-1), ncol = 8, nrow = 1, byrow = TRUE)
+t = glht(output_reg, linfct = K)
+t_sum = summary(t)
+t_sum
+confint(t)
+
+t_stand = glht(output_reg_stand, linfct = K)
+t_stand_sum = summary(t_stand)
+t_stand_sum
+
+t_log = glht(output_reg_log, linfct = K)
+t_log_sum = summary(t_log)
+t_log_sum
+
+```
+
+##################################
+All treatmentments diff Score RASF3
+##################################
+```{r}
+output_reg = lmer(RASTotalScoreF3 ~ RelationshipStatus + RASTotalScoreF1 + Time*factor(Treatment) +  + (1 | ID), data  = datAdultAnalysisComplete)
+summary(output_reg)
+confint(output_reg)
+
+output_reg_stand = lmer(RASTotalScoreF3.1 ~ RelationshipStatus + RASTotalScoreF1  + Time*factor(Treatment) +  + (1 | ID), data  = datAdultAnalysisComplete)
+summary(output_reg_stand)
+
+output_reg_log = lmer(RASTotalScoreF3.2 ~ RelationshipStatus + RASTotalScoreF1  + Time*factor(Treatment) +  + (1 | ID), data  = datAdultAnalysisComplete)
+summary(output_reg_log)
+
+```
+RASF3 Contrasts 
+```{r}
+K = matrix(c(0,0,0,0,0,0,1,-1), ncol = 8, nrow = 1, byrow = TRUE)
+t = glht(output_reg, linfct = K)
+t_sum = summary(t)
+t_sum
+confint(t)
+
+t_stand = glht(output_reg_stand, linfct = K)
+t_stand_sum = summary(t_stand)
+t_stand_sum
+
+t_log = glht(output_reg_log, linfct = K)
+t_log_sum = summary(t_log)
+t_log_sum
+
+```
+##################################
+All treatmentments diff Score RASF5
+##################################
+```{r}
+output_reg = lmer(RASTotalScoreF5 ~ RelationshipStatus + RASTotalScoreF1 + Time*factor(Treatment) +  + (1 | ID), data  = datAdultAnalysisComplete)
+summary(output_reg)
+confint(output_reg)
+
+output_reg_stand = lmer(RASTotalScoreF5.1 ~ RelationshipStatus + RASTotalScoreF1 + RASTotalScoreF1 + Time*factor(Treatment)   + (1 | ID), data  = datAdultAnalysisComplete)
+summary(output_reg_stand)
+
+output_reg_log = lmer(RASTotalScoreF5.2 ~ RelationshipStatus + RASTotalScoreF1 + Time*factor(Treatment)  + (1 | ID), data  = datAdultAnalysisComplete)
+summary(output_reg_log)
+
+uninstall.packages("lmerTest")
+output_reg = lmer(RASTotalScoreF5 ~ RelationshipStatus + RASTotalScoreF1 + Time*factor(Treatment)  + (1 | ID), data  = datAdultAnalysisComplete)
+
+konfound(output_reg, "Time:factor(Treatment)3")
+
+```
+RASF5 Contrasts 
+```{r}
+K = matrix(c(0,0,0,0,0,0,1,-1), ncol = 8, nrow = 1, byrow = TRUE)
+t = glht(output_reg, linfct = K)
+t_sum = summary(t)
+t_sum
+confint(t)
+
+t_stand = glht(output_reg_stand, linfct = K)
+t_stand_sum = summary(t_stand)
+t_stand_sum
+
+t_log = glht(output_reg_log, linfct = K)
+t_log_sum = summary(t_log)
+t_log_sum
+```
+##################################
+All treatmentments diff Score INQTotalScoreF1
+##################################
+```{r}
+install.packages("lmerTest")
+library(lmerTest)
+output_reg = lmer(INQTotalScoreF1 ~ RelationshipStatus + RASTotalScoreF1  + Time*factor(Treatment) +  + (1 | ID), data  = datAdultAnalysisComplete)
+summary(output_reg)
+confint(output_reg)
+
+output_reg_stand = lmer(INQTotalScoreF1.1 ~ RelationshipStatus + RASTotalScoreF1  + Time*factor(Treatment)   + (1 | ID), data  = datAdultAnalysisComplete)
+summary(output_reg_stand)
+
+output_reg_log = lmer(INQTotalScoreF1.2 ~ RelationshipStatus + RASTotalScoreF1  + Time*factor(Treatment)  + (1 | ID), data  = datAdultAnalysisComplete)
+summary(output_reg_log)
+
+```
+RASF5 Contrasts 
+```{r}
+K = matrix(c(0,0,0,0,0,0,1,-1), ncol = 8, nrow = 1, byrow = TRUE)
+t = glht(output_reg, linfct = K)
+t_sum = summary(t)
+t_sum
+confint(t)
+
+t_stand = glht(output_reg_stand, linfct = K)
+t_stand_sum = summary(t_stand)
+t_stand_sum
+
+t_log = glht(output_reg_log, linfct = K)
+t_log_sum = summary(t_log)
+t_log_sum
+```
+
+
+##################################
+All treatmentments diff Score INQTotalScoreF2
+##################################
+```{r}
+output_reg = lmer(INQTotalScoreF2 ~ RelationshipStatus + RASTotalScoreF1  + Time*factor(Treatment) +  + (1 | ID), data  = datAdultAnalysisComplete)
+summary(output_reg)
+confint(output_reg)
+
+output_reg_stand = lmer(INQTotalScoreF2.1 ~ RelationshipStatus + RASTotalScoreF1  + Time*factor(Treatment)   + (1 | ID), data  = datAdultAnalysisComplete)
+summary(output_reg_stand)
+
+output_reg_log = lmer(INQTotalScoreF2.2 ~ RelationshipStatus + RASTotalScoreF1  + Time*factor(Treatment)  + (1 | ID), data  = datAdultAnalysisComplete)
+summary(output_reg_log)
+
+```
+INQTotalScoreF2 Contrasts 
+```{r}
+K = matrix(c(0,0,0,0,0,0,1,-1), ncol = 8, nrow = 1, byrow = TRUE)
+t = glht(output_reg, linfct = K)
+t_sum = summary(t)
+t_sum
+confint(t)
+
+t_stand = glht(output_reg_stand, linfct = K)
+t_stand_sum = summary(t_stand)
+t_stand_sum
+
+t_log = glht(output_reg_log, linfct = K)
+t_log_sum = summary(t_log)
+t_log_sum
+```
+##################################
+All treatmentments diff Score SSMITotalScore
+##################################
+```{r}
+output_reg = lmer(SSMITotalScore ~ RelationshipStatus + RASTotalScoreF1 + Time*factor(Treatment) +  + (1 | ID), data  = datAdultAnalysisComplete)
+summary(output_reg)
+confint(output_reg)
+
+output_reg_stand = lmer(SSMITotalScore.1 ~ RelationshipStatus + RASTotalScoreF1 + Time*factor(Treatment)   + (1 | ID), data  = datAdultAnalysisComplete)
+summary(output_reg_stand)
+
+output_reg_log = lmer(SSMITotalScore.2 ~ RelationshipStatus + RASTotalScoreF1 + Time*factor(Treatment)  + (1 | ID), data  = datAdultAnalysisComplete)
+summary(output_reg_log)
+
+```
+SSMITotalScore Contrasts 
+```{r}
+K = matrix(c(0,0,0,0,0,0,1,-1), ncol = 8, nrow = 1, byrow = TRUE)
+t = glht(output_reg, linfct = K)
+t_sum = summary(t)
+t_sum
+confint(t)
+
+t_stand = glht(output_reg_stand, linfct = K)
+t_stand_sum = summary(t_stand)
+t_stand_sum
+
+t_log = glht(output_reg_log, linfct = K)
+t_log_sum = summary(t_log)
+t_log_sum
+```
+##################################
+All treatmentments diff Score SISTotalScoreF1
+##################################
+```{r}
+output_reg = lmer(SISTotalScoreF1 ~ RelationshipStatus + RASTotalScoreF1 + Time*factor(Treatment) +  + (1 | ID), data  = datAdultAnalysisComplete)
+summary(output_reg)
+confint(output_reg)
+
+output_reg_stand = lmer(SISTotalScoreF1.1 ~ RelationshipStatus + RASTotalScoreF1 + Time*factor(Treatment)   + (1 | ID), data  = datAdultAnalysisComplete)
+summary(output_reg_stand)
+
+output_reg_log = lmer(SISTotalScoreF1.2 ~ RelationshipStatus + RASTotalScoreF1 + Time*factor(Treatment)  + (1 | ID), data  = datAdultAnalysisComplete)
+summary(output_reg_log)
+
+```
+SISTotalScoreF1 Contrasts 
+```{r}
+K = matrix(c(0,0,0,0,0,0,1,-1), ncol = 8, nrow = 1, byrow = TRUE)
+t = glht(output_reg, linfct = K)
+t_sum = summary(t)
+t_sum
+confint(t)
+
+t_stand = glht(output_reg_stand, linfct = K)
+t_stand_sum = summary(t_stand)
+t_stand_sum
+
+t_log = glht(output_reg_log, linfct = K)
+t_log_sum = summary(t_log)
+t_log_sum
+```
 
 
