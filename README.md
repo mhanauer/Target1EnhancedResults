@@ -220,7 +220,7 @@ full_n
 ############## Getting rid of anybody who doesn't have a follow-up that meet the criteria
 quasi_itt = apply(target_dat[,18:25], 1, function(x){sum(is.na(x))})
 quasi_itt
-n_drop = round(.7*length(target_dat[,18:25]),0)
+n_drop = round(.5*length(target_dat[,18:25]),0)
 quasi_itt_dat = data.frame(target_dat,quasi_itt)
 quasi_itt_dat
 quasi_itt_dat = subset(quasi_itt_dat, quasi_itt < n_drop)
