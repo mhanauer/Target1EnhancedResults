@@ -217,10 +217,10 @@ var_missing = data.frame(var_missing)
 var_missing
 full_n = dim(target_dat)[1]
 full_n
-############## Getting rid of anybody who doesn't have a follow-up that meet the criteria
-quasi_itt = apply(target_dat[,18:25], 1, function(x){sum(is.na(x))})
+############## Ony want those who have 50% or more of completed data
+quasi_itt = apply(target_dat, 1, function(x){sum(is.na(x))})
 quasi_itt
-n_drop = round(.5*length(target_dat[,18:25]),0)
+n_drop = round(.5*length(target_dat),0)
 quasi_itt_dat = data.frame(target_dat,quasi_itt)
 quasi_itt_dat
 quasi_itt_dat = subset(quasi_itt_dat, quasi_itt < n_drop)
@@ -241,11 +241,10 @@ missing_results = round(missing_results, 3)
 missing_results = t(missing_results)
 colnames(missing_results)= "n_percent"
 #### Add a column with explainations for each of them
-explain = c("Total number of participants. Anyone who assigned an ID is included that was not .1. Excluded if not assigned a treatment", "Total number of participants who completed at least 70% of a discharge. This data set still contains missing values.", "Total number of complete cases.", "Percentage of clients who did not complete at least 70% of discharge.", "Percentage of missing data.")
+explain = c("Total number of participants. Anyone who assigned an ID is included that was not .1, or a duplicate. Excluded if not assigned a treatment", "Total number of participants who completed at least 50% of the total assessment. This data set still contains missing values.", "Total number of complete cases.", "Percentage of clients who did not complete at least 50% of the total assessment.", "Percentage of missing data.")
 missing_results = data.frame(missing_results, explain)
 
 write.csv(missing_results, "missing_results.csv")
-target_dat_complete = na.omit(target_dat)
 
 ```
 ####################
@@ -253,22 +252,30 @@ Target Descriptives
 ###################
 ```{r}
 library(psych)
-des_cat_target_dat_complete = target_dat_complete[,c(2,4:9)]
-des_cat_target_dat_complete = apply(des_cat_target_dat_complete, 2, function(x){describe.factor(x, decr.order = FALSE)})
-des_cat_target_dat_complete = data.frame(des_cat_target_dat_complete)
-des_cat_target_dat_complete = t(des_cat_target_dat_complete)
-des_cat_target_dat_complete
+target_dat_quasi_itt = quasi_itt_dat
+des_cat_target_dat_quasi_itt = target_dat_quasi_itt[,c(2,4:9)]
+des_cat_target_dat_quasi_itt = apply(des_cat_target_dat_quasi_itt, 2, function(x){describe.factor(x, decr.order = FALSE)})
+des_cat_target_dat_quasi_itt = data.frame(des_cat_target_dat_quasi_itt)
+des_cat_target_dat_quasi_itt = t(des_cat_target_dat_quasi_itt)
+des_cat_target_dat_quasi_itt
+des_cat_target_dat_quasi_itt = data.frame(des_cat_target_dat_quasi_itt)
+des_cat_target_dat_quasi_itt$Percent = round(des_cat_target_dat_quasi_itt$Percent, 3)
+des_cat_target_dat_quasi_itt
 
-des_con_target_dat_complete = target_dat_complete[,-c(1,2,4:9)]
-des_con_target_dat_complete = describe(des_con_target_dat_complete)
-des_con_target_dat_complete = des_con_target_dat_complete[,c(3,4,8,9)]
-des_con_target_dat_complete = round(des_con_target_dat_complete, 3)
-range = paste0(des_con_target_dat_complete$min, sep = ",", des_con_target_dat_complete$max)
-des_con_target_dat_complete = data.frame(des_con_target_dat_complete, range)
-des_con_target_dat_complete[,3:4] = NULL
-des_con_target_dat_complete
-############# Range
-
+des_con_target_dat_quasi_itt = target_dat_quasi_itt[,c(3,10:25)]
+des_con_target_dat_quasi_itt
+mean_target = apply(des_con_target_dat_quasi_itt, 2, mean, na.rm = TRUE)
+mean_target
+sd_target = apply(des_con_target_dat_quasi_itt, 2, sd, na.rm = TRUE)
+range_target = apply(des_con_target_dat_quasi_itt, 2, range, na.rm = TRUE)
+range_target = t(range_target)
+range_target = data.frame(range_target)
+range_target = round(range_target,3)
+range_target = paste0(range_target$X1, sep = ",", range_target$X2)
+range_target
+con_target = data.frame(mean_target, sd_target, range_target)
+con_target[,1:2] = round(con_target[,1:2],3)
+con_target
 ```
 #############
 Target Impute
