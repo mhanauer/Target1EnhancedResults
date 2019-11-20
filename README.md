@@ -284,7 +284,6 @@ Target Impute
 library(Amelia)
 impute_dat = quasi_itt_dat
 dim(impute_dat)
-impute_dat$SIS_d_1_average
 a.out = amelia(x = impute_dat, m = 5, noms = c("treatment" ,"female", "single", "non_white", "sexual_minority", "high_school_greater", "employed"))
 compare.density(a.out, var = "SIS_d_1_average")
 impute_dat_loop = a.out$imputations
@@ -304,7 +303,7 @@ target_within_t1_base_d1$treatment = NULL
 target_within_t1_dis_d1$treatment = NULL
 target_within_t1_d1_results = list()
 for(i in 1:length(target_within_t1_base_d1)){
-  target_within_t1_d1_results[[i]] = cohen.d(target_within_t1_dis_d1[[i]], target_within_t1_base_d1[[i]], paired = TRUE)
+  target_within_t1_d1_results[[i]] = cohen.d(target_within_t1_dis_d1[[i]], target_within_t1_base_d1[[i]], paired = TRUE, conf.level = .95)
   target_within_t1_d1_results[[i]] = target_within_t1_d1_results[[i]][c(3,5)]
   
 }
@@ -322,7 +321,7 @@ target_within_t1_base_d2$treatment = NULL
 target_within_t1_dis_d2$treatment = NULL
 target_within_t1_d2_results = list()
 for(i in 1:length(target_within_t1_base_d2)){
-  target_within_t1_d2_results[[i]] = cohen.d(target_within_t1_dis_d2[[i]], target_within_t1_base_d2[[i]], paired = TRUE)
+  target_within_t1_d2_results[[i]] = cohen.d(target_within_t1_dis_d2[[i]], target_within_t1_base_d2[[i]], paired = TRUE,  conf.level = .95)
   target_within_t1_d2_results[[i]] = target_within_t1_d2_results[[i]][c(3,5)]
   
 }
@@ -340,7 +339,7 @@ target_within_t1_base_d3$treatment = NULL
 target_within_t1_dis_d3$treatment = NULL
 target_within_t1_d3_results = list()
 for(i in 1:length(target_within_t1_base_d3)){
-  target_within_t1_d3_results[[i]] = cohen.d(target_within_t1_dis_d3[[i]], target_within_t1_base_d3[[i]], paired = TRUE)
+  target_within_t1_d3_results[[i]] = cohen.d(target_within_t1_dis_d3[[i]], target_within_t1_base_d3[[i]], paired = TRUE,  conf.level = .95)
   target_within_t1_d3_results[[i]] = target_within_t1_d3_results[[i]][c(3,5)]
   
 }
@@ -358,7 +357,7 @@ target_within_t1_base_d4$treatment = NULL
 target_within_t1_dis_d4$treatment = NULL
 target_within_t1_d4_results = list()
 for(i in 1:length(target_within_t1_base_d4)){
-  target_within_t1_d4_results[[i]] = cohen.d(target_within_t1_dis_d4[[i]], target_within_t1_base_d4[[i]], paired = TRUE)
+  target_within_t1_d4_results[[i]] = cohen.d(target_within_t1_dis_d4[[i]], target_within_t1_base_d4[[i]], paired = TRUE,  conf.level = .95)
   target_within_t1_d4_results[[i]] = target_within_t1_d4_results[[i]][c(3,5)]
   
 }
@@ -376,7 +375,7 @@ target_within_t1_base_d5$treatment = NULL
 target_within_t1_dis_d5$treatment = NULL
 target_within_t1_d5_results = list()
 for(i in 1:length(target_within_t1_base_d5)){
-  target_within_t1_d5_results[[i]] = cohen.d(target_within_t1_dis_d5[[i]], target_within_t1_base_d5[[i]], paired = TRUE)
+  target_within_t1_d5_results[[i]] = cohen.d(target_within_t1_dis_d5[[i]], target_within_t1_base_d5[[i]], paired = TRUE,  conf.level = .95)
   target_within_t1_d5_results[[i]] = target_within_t1_d5_results[[i]][c(3,5)]
   
 }
@@ -417,7 +416,7 @@ target_within_t2_base_d1$treatment = NULL
 target_within_t2_dis_d1$treatment = NULL
 target_within_t2_d1_results = list()
 for(i in 1:length(target_within_t2_base_d1)){
-  target_within_t2_d1_results[[i]] = cohen.d(target_within_t2_dis_d1[[i]], target_within_t2_base_d1[[i]], paired = TRUE)
+  target_within_t2_d1_results[[i]] = cohen.d(target_within_t2_dis_d1[[i]], target_within_t2_base_d1[[i]], paired = TRUE, conf.level = .95)
   target_within_t2_d1_results[[i]] = target_within_t2_d1_results[[i]][c(3,5)]
   
 }
@@ -435,7 +434,7 @@ target_within_t2_base_d2$treatment = NULL
 target_within_t2_dis_d2$treatment = NULL
 target_within_t2_d2_results = list()
 for(i in 1:length(target_within_t2_base_d2)){
-  target_within_t2_d2_results[[i]] = cohen.d(target_within_t2_dis_d2[[i]], target_within_t2_base_d2[[i]], paired = TRUE)
+  target_within_t2_d2_results[[i]] = cohen.d(target_within_t2_dis_d2[[i]], target_within_t2_base_d2[[i]], paired = TRUE, conf.level = .95)
   target_within_t2_d2_results[[i]] = target_within_t2_d2_results[[i]][c(3,5)]
   
 }
@@ -453,7 +452,7 @@ target_within_t2_base_d3$treatment = NULL
 target_within_t2_dis_d3$treatment = NULL
 target_within_t2_d3_results = list()
 for(i in 1:length(target_within_t2_base_d3)){
-  target_within_t2_d3_results[[i]] = cohen.d(target_within_t2_dis_d3[[i]], target_within_t2_base_d3[[i]], paired = TRUE)
+  target_within_t2_d3_results[[i]] = cohen.d(target_within_t2_dis_d3[[i]], target_within_t2_base_d3[[i]], paired = TRUE, conf.level = .95)
   target_within_t2_d3_results[[i]] = target_within_t2_d3_results[[i]][c(3,5)]
   
 }
@@ -471,7 +470,7 @@ target_within_t2_base_d4$treatment = NULL
 target_within_t2_dis_d4$treatment = NULL
 target_within_t2_d4_results = list()
 for(i in 1:length(target_within_t2_base_d4)){
-  target_within_t2_d4_results[[i]] = cohen.d(target_within_t2_dis_d4[[i]], target_within_t2_base_d4[[i]], paired = TRUE)
+  target_within_t2_d4_results[[i]] = cohen.d(target_within_t2_dis_d4[[i]], target_within_t2_base_d4[[i]], paired = TRUE, conf.level = .95)
   target_within_t2_d4_results[[i]] = target_within_t2_d4_results[[i]][c(3,5)]
   
 }
@@ -489,7 +488,7 @@ target_within_t2_base_d5$treatment = NULL
 target_within_t2_dis_d5$treatment = NULL
 target_within_t2_d5_results = list()
 for(i in 1:length(target_within_t2_base_d5)){
-  target_within_t2_d5_results[[i]] = cohen.d(target_within_t2_dis_d5[[i]], target_within_t2_base_d5[[i]], paired = TRUE)
+  target_within_t2_d5_results[[i]] = cohen.d(target_within_t2_dis_d5[[i]], target_within_t2_base_d5[[i]], paired = TRUE, conf.level = .95)
   target_within_t2_d5_results[[i]] = target_within_t2_d5_results[[i]][c(3,5)]
   
 }
@@ -530,7 +529,7 @@ target_within_t3_base_d1$treatment = NULL
 target_within_t3_dis_d1$treatment = NULL
 target_within_t3_d1_results = list()
 for(i in 1:length(target_within_t3_base_d1)){
-  target_within_t3_d1_results[[i]] = cohen.d(target_within_t3_dis_d1[[i]], target_within_t3_base_d1[[i]], paired = TRUE)
+  target_within_t3_d1_results[[i]] = cohen.d(target_within_t3_dis_d1[[i]], target_within_t3_base_d1[[i]], paired = TRUE, conf.level = .95)
   target_within_t3_d1_results[[i]] = target_within_t3_d1_results[[i]][c(3,5)]
   
 }
@@ -548,7 +547,7 @@ target_within_t3_base_d2$treatment = NULL
 target_within_t3_dis_d2$treatment = NULL
 target_within_t3_d2_results = list()
 for(i in 1:length(target_within_t3_base_d2)){
-  target_within_t3_d2_results[[i]] = cohen.d(target_within_t3_dis_d2[[i]], target_within_t3_base_d2[[i]], paired = TRUE)
+  target_within_t3_d2_results[[i]] = cohen.d(target_within_t3_dis_d2[[i]], target_within_t3_base_d2[[i]], paired = TRUE, conf.level = .95)
   target_within_t3_d2_results[[i]] = target_within_t3_d2_results[[i]][c(3,5)]
   
 }
@@ -566,7 +565,7 @@ target_within_t3_base_d3$treatment = NULL
 target_within_t3_dis_d3$treatment = NULL
 target_within_t3_d3_results = list()
 for(i in 1:length(target_within_t3_base_d3)){
-  target_within_t3_d3_results[[i]] = cohen.d(target_within_t3_dis_d3[[i]], target_within_t3_base_d3[[i]], paired = TRUE)
+  target_within_t3_d3_results[[i]] = cohen.d(target_within_t3_dis_d3[[i]], target_within_t3_base_d3[[i]], paired = TRUE, conf.level = .95)
   target_within_t3_d3_results[[i]] = target_within_t3_d3_results[[i]][c(3,5)]
   
 }
@@ -584,7 +583,7 @@ target_within_t3_base_d4$treatment = NULL
 target_within_t3_dis_d4$treatment = NULL
 target_within_t3_d4_results = list()
 for(i in 1:length(target_within_t3_base_d4)){
-  target_within_t3_d4_results[[i]] = cohen.d(target_within_t3_dis_d4[[i]], target_within_t3_base_d4[[i]], paired = TRUE)
+  target_within_t3_d4_results[[i]] = cohen.d(target_within_t3_dis_d4[[i]], target_within_t3_base_d4[[i]], paired = TRUE, conf.level = .95)
   target_within_t3_d4_results[[i]] = target_within_t3_d4_results[[i]][c(3,5)]
   
 }
@@ -602,7 +601,7 @@ target_within_t3_base_d5$treatment = NULL
 target_within_t3_dis_d5$treatment = NULL
 target_within_t3_d5_results = list()
 for(i in 1:length(target_within_t3_base_d5)){
-  target_within_t3_d5_results[[i]] = cohen.d(target_within_t3_dis_d5[[i]], target_within_t3_base_d5[[i]], paired = TRUE)
+  target_within_t3_d5_results[[i]] = cohen.d(target_within_t3_dis_d5[[i]], target_within_t3_base_d5[[i]], paired = TRUE, conf.level = .95)
   target_within_t3_d5_results[[i]] = target_within_t3_d5_results[[i]][c(3,5)]
   
 }
@@ -637,6 +636,7 @@ target_within_t3_results
 
 target_within_results = rbind(target_within_t1_results, target_within_t2_results, target_within_t3_results)
 target_within_results
+write.csv(target_within_results, "target_within_results_95.csv", row.names = FALSE)
 
 ```
 ###################
