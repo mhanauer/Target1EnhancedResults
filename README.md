@@ -1,4 +1,4 @@
-# Target-TLC_2019
+# Target_2019
 ---
 title: "Enhanced Results"
 output:
@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 #########################
 Target Data Cleaning
 ##########################
+
 ```{r, include=FALSE}
 setwd("P:/Evaluation/TN Lives Count_Writing/4_Target1_EnhancedCrisisFollow-up/3_Data & Data Analyses")
 datPreAdult = read.csv("Target1EnhancedBaseAdult.csv", header = TRUE)
@@ -46,19 +47,10 @@ datAdult = merge(datAdult, datAdultTreat, all.x = TRUE, by = "Adult.ID")
 dim(datAdult)
 
 #### Get the missing ids for Rachel
-target_id_treat = data.frame(id = datAdult$Adult.ID, treat = datAdult$Treatment)
-target_id_treat
-is.wholenumber <- function(x, tol = .Machine$double.eps^0.5)  abs(x - round(x)) < tol
-whole_number =  is.wholenumber(target_id_treat$id)
-target_id_treat$whole_number = whole_number
-dim(target_id_treat)
-target_id_treat = subset(target_id_treat, whole_number == TRUE)
-dim(target_id_treat)
-target_id_treat$whole_number = NULL
 target_id_treat$na_true = is.na(target_id_treat$treat)
 target_id_treat = subset(target_id_treat, na_true == TRUE)
 dim(target_id_treat)
-write.csv(target_id_treat, "target_id_treat.csv", row.names = FALSE)
+
 
 
 
@@ -67,14 +59,7 @@ write.csv(target_id_treat, "target_id_treat.csv", row.names = FALSE)
 datAdult = datAdult[-c(259, 262,208),] 
 describe.factor(datAdult$Adult.ID)
 
-### Now get rid of .1's
-is.wholenumber <- function(x, tol = .Machine$double.eps^0.5)  abs(x - round(x)) < tol
-whole_number =  is.wholenumber(datAdult$Adult.ID)
-datAdult$whole_number = whole_number
-dim(datAdult)
-datAdult = subset(datAdult, whole_number == TRUE)
-dim(datAdult)
-datAdult$whole_number = NULL
+
 
 colnames(datAdult) = c("ID", "Age", "Gender", "Race", "SexualOrientation", "RelationshipStatus", "Edu", "Employment", "RAS1_b", "RAS2_b", "RAS3_b", "RAS4_b", "RAS5_b", "RAS6_b", "RAS7_b", "RAS8_b", "RAS9_b", "RAS10_b", "RAS11_b", "RAS12_b", "RAS13_b", "RAS14_b", "RAS15_b", "RAS16_b", "RAS17_b", "RAS18_b", "RAS19_b", "RAS20_b", "INQ1_b", "INQ2_b", "INQ3_b", "INQ4_b", "INQ5_b", "INQ6_b", "INQ7_b", "INQ8_b", "INQ9_b", "INQ10_b", "SSMI1_b", "SSMI2_b", "SSMI3_b", "SSMI4_b", "SSMI5_b", "SIS1_b", "SIS2_b", "SIS3_b", "SIS4_b", "SIS5_b", "SIS6_b", "SIS7_b", "RAS1_d", "RAS2_d", "RAS3_d", "RAS4_d", "RAS5_d", "RAS6_d", "RAS7_d", "RAS8_d", "RAS9_d", "RAS10_d", "RAS11_d", "RAS12_d", "RAS13_d", "RAS14_d", "RAS15_d", "RAS16_d", "RAS17_d", "RAS18_d", "RAS19_d", "RAS20_d", "INQ1_d", "INQ2_d", "INQ3_d", "INQ4_d", "INQ5_d", "INQ6_d", "INQ7_d", "INQ8_d", "INQ9_d", "INQ10_d", "SSMI1_d", "SSMI2_d", "SSMI3_d", "SSMI4_d", "SSMI5_d", "SIS1_d", "SIS2_d", "SIS3_d", "SIS4_d", "SIS5_d", "SIS6_d", "SIS7_d", "Treatment")
 describe.factor(datAdult$Treatment)
