@@ -45,14 +45,14 @@ dim(datPreAdult)
 ### merge with treatment
 datAdult = merge(datAdult, datAdultTreat, all.x = TRUE, by = "Adult.ID")
 dim(datAdult)
-
+describe.factor(datAdult$Treatment)
 #### Get the missing ids for Rachel
-target_id_treat$na_true = is.na(target_id_treat$treat)
+target_id_treat = datAdult
+target_id_treat$na_true = is.na(target_id_treat$Treatment)
 target_id_treat = subset(target_id_treat, na_true == TRUE)
 dim(target_id_treat)
-
-
-
+target_id_treat
+write.csv(target_id_treat, "target_id_treat.csv", row.names = FALSE)
 
 ##########
 #### Three double ids need to get rid of 1272, 1280, 1131 
@@ -69,7 +69,7 @@ datAdult$Treatment = ifelse(datAdult$Treatment == "A", 1, ifelse(datAdult$Treatm
 describe.factor(datAdult$Treatment)
 
 ### Werid B changed to 6 so changing it back
-datAdult$Treatment = ifelse(datAdult$Treatment == 6 , 2, datAdult$Treatment)
+datAdult$Treatment = ifelse(datAdult$Treatment == 5 , 2, datAdult$Treatment)
 describe.factor(datAdult$Treatment)
 # Three items are reversed scored: f = 6, g = 7, j = 10
 datAdult$INQ6_b = 8-datAdult$INQ6_b
@@ -186,6 +186,11 @@ describe.factor(treatment)
 target_dat = data.frame(ID = datAdult$ID, treatment, age = datAdult$Age, female, non_white, single, sexual_minority, high_school_greater, employed, RAS_b_1_average, RAS_b_2_average, RAS_b_3_average, RAS_b_5_average, INQ_b_1_average, INQ_b_2_average, SIS_b_1_average,SSMI_b_average, RAS_d_1_average, RAS_d_2_average, RAS_d_3_average, RAS_d_5_average, INQ_d_1_average, INQ_d_2_average, SIS_d_1_average,SSMI_d_average)
 
 target_dat
+########## Get rid of missing treatment for the .1's
+target_dat$treat_missing = is.na(target_dat$treatment)
+target_dat = subset(target_dat, treat_missing == FALSE)
+target_dat$treat_missing = NULL
+dim(target_dat)
 
 ```
 ##############
@@ -197,6 +202,7 @@ library(MissMech)
 library(naniar)
 #TestMCARNormality(dat_pre_post_adult[,10:92])
 dim(target_dat)
+target_dat
 var_missing =  miss_var_summary(target_dat)
 var_missing = data.frame(var_missing)
 var_missing
@@ -219,14 +225,14 @@ quasi_itt_missing_percent = prop_miss_case(quasi_itt_dat)
 quasi_tot_dat =  quasi_itt_dat 
 quasi_tot_dat = na.omit(quasi_tot_dat)
 quasi_tot_n = dim(quasi_tot_dat)[1]
-quasi_tot_drop_out_rate = 1-(dim(quasi_tot_dat)[1]/dim(tlc_data_analysis_average)[1])
+quasi_tot_drop_out_rate = 1-(dim(quasi_tot_dat)[1]/dim(target_dat)[1])
 ###
 missing_results = data.frame(full_n, quasi_itt_n, quasi_tot_n, quasi_itt_drop_out_rate, quasi_tot_drop_out_rate)
 missing_results = round(missing_results, 3)
 missing_results = t(missing_results)
 colnames(missing_results)= "n_percent"
 #### Add a column with explainations for each of them
-explain = c("Total number of participants. Anyone who assigned an ID is included that was not .1, or a duplicate. Excluded if not assigned a treatment", "Total number of participants who completed at least 50% of the total assessment. This data set still contains missing values.", "Total number of complete cases.", "Percentage of clients who did not complete at least 50% of the total assessment.", "Percentage of missing data.")
+explain = c("Total number of participants.  Excluded if renrollment with data already", "Total number of participants who completed at least 50% of the total assessment. This data set still contains missing values.", "Total number of complete cases.", "Percentage of clients who did not complete at least 50% of the total assessment.", "Percentage of missing data.")
 missing_results = data.frame(missing_results, explain)
 
 write.csv(missing_results, "missing_results.csv")
@@ -238,6 +244,9 @@ Target Descriptives
 ```{r}
 library(psych)
 target_dat_quasi_itt = quasi_itt_dat
+##N
+dim(target_dat_quasi_itt)
+describe.factor(target_dat_quasi_itt$treatment)
 des_cat_target_dat_quasi_itt = target_dat_quasi_itt[,c(2,4:9)]
 des_cat_target_dat_quasi_itt = apply(des_cat_target_dat_quasi_itt, 2, function(x){describe.factor(x, decr.order = FALSE)})
 des_cat_target_dat_quasi_itt = data.frame(des_cat_target_dat_quasi_itt)
@@ -246,6 +255,7 @@ des_cat_target_dat_quasi_itt
 des_cat_target_dat_quasi_itt = data.frame(des_cat_target_dat_quasi_itt)
 des_cat_target_dat_quasi_itt$Percent = round(des_cat_target_dat_quasi_itt$Percent, 3)
 des_cat_target_dat_quasi_itt
+write.csv(des_cat_target_dat_quasi_itt, "des_cat_target_dat_quasi_itt.csv")
 
 des_con_target_dat_quasi_itt = target_dat_quasi_itt[,c(3,10:25)]
 des_con_target_dat_quasi_itt
@@ -272,7 +282,6 @@ dim(impute_dat)
 a.out = amelia(x = impute_dat, m = 5, noms = c("treatment" ,"female", "single", "non_white", "sexual_minority", "high_school_greater", "employed"))
 compare.density(a.out, var = "SIS_d_1_average")
 impute_dat_loop = a.out$imputations
-impute_dat_loop
 dim(impute_dat_loop$imp1)
 ```
 
@@ -283,6 +292,7 @@ Target within ITT
 ```{r}
 #### T1 within change
 target_within_t1_base_d1 = subset(impute_dat_loop[[1]][,c(2,10:17)], treatment == 1)
+head(target_within_t1_base_d1)
 target_within_t1_dis_d1 = subset(impute_dat_loop[[1]][,c(2,18:25)], treatment == 1)
 target_within_t1_base_d1$treatment = NULL
 target_within_t1_dis_d1$treatment = NULL
@@ -753,6 +763,7 @@ colnames(target_between_impute_results) = c("parameter_estimate", "se", "p_value
 target_between_impute_results[,1:2] = round(target_between_impute_results[,1:2], 3)
 target_between_impute_results$parameter_estimate = ifelse(target_between_impute_results$p_value < .05, paste0(target_between_impute_results$parameter_estimate, "*"), target_between_impute_results$parameter_estimate)
 target_between_impute_results
+write.csv(target_between_impute_results, "target_between_impute_results.csv")
 ```
 #############################
 Target Between Contrasts
@@ -851,8 +862,10 @@ est_se_con$ci_95 = ci_95
 est_se_con
 est_se_con$est_con = ifelse(est_se_con$p_values < .05, paste0(est_se_con$est_con, "*"), est_se_con$est_con)
 est_se_con$est_con
-est_se_con
+write.csv(est_se_con, "est_se_con.csv")
 ```
+#############
+Between contrasts
 
 
 
