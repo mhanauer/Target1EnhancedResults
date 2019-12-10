@@ -187,13 +187,12 @@ describe.factor(treatment)
 ########## 
 # Put together Target dat set
 #################
-target_dat = data.frame(ID = datAdult$ID, treatment, age = datAdult$Age, female, non_white, single, sexual_minority, high_school_greater, employed, RAS_b_1_average, RAS_b_2_average, RAS_b_3_average, RAS_b_5_average, INQ_b_1_average, INQ_b_2_average, SIS_b_1_average,SSMI_b_average, RAS_d_1_average, RAS_d_2_average, RAS_d_3_average, RAS_d_5_average, INQ_d_1_average, INQ_d_2_average, SIS_d_1_average,SSMI_d_average)
+target_dat = data.frame(ID = datAdult$ID, treatment, age = datAdult$Age, female, non_white, single, sexual_minority, high_school_greater, employed, RAS_b_1_average, RAS_b_2_average, RAS_b_3_average, RAS_b_5_average, INQ_b_1_average, INQ_b_2_average, SSMI_b_average, SIS_b_1_average, RAS_d_1_average, RAS_d_2_average, RAS_d_3_average, RAS_d_5_average, INQ_d_1_average, INQ_d_2_average,SSMI_d_average, SIS_d_1_average)
 
 
 ### treatment
 treatment =  datAdult$Treatment
 describe.factor(treatment)
-
 ```
 ##############
 Target
@@ -238,14 +237,14 @@ explain = c("Total number of participants.  Excluded if renrollment with data al
 missing_results = data.frame(missing_results, explain)
 
 write.csv(missing_results, "missing_results.csv")
-
+target_dat_quasi_itt = quasi_itt_dat
+target_dat_quasi_itt
 ```
 ####################
 Target Descriptives
 ###################
 ```{r}
 library(psych)
-target_dat_quasi_itt = quasi_itt_dat
 ##N
 dim(target_dat_quasi_itt)
 describe.factor(target_dat_quasi_itt$treatment)
@@ -272,19 +271,21 @@ range_target = paste0(range_target$X1, sep = ",", range_target$X2)
 range_target
 con_target = data.frame(mean_target, sd_target, range_target)
 con_target[,1:2] = round(con_target[,1:2],3)
-con_target
+write.csv(con_target, "con_target.csv")
 ```
 #############
 Target Impute
 #############
 ```{r}
 library(Amelia)
-impute_dat = quasi_itt_dat
+impute_dat = target_dat_quasi_itt
 dim(impute_dat)
 a.out = amelia(x = impute_dat, m = 5, noms = c("treatment" ,"female", "single", "non_white", "sexual_minority", "high_school_greater", "employed"))
 compare.density(a.out, var = "SIS_d_1_average")
 impute_dat_loop = a.out$imputations
 dim(impute_dat_loop$imp1)
+impute_dat_loop[[1]][,c(2,10:17)]
+impute_dat_loop[[1]][,c(2,18:25)]
 ```
 
 
@@ -613,7 +614,6 @@ target_within_t3_d5_results
 target_within_t3_cohen_d = data.frame(cohen_d1 = target_within_t3_d1_results$cohen_d, cohen_d2 = target_within_t3_d2_results$cohen_d, cohen_d3 = target_within_t3_d3_results$cohen_d, cohen_d4 = target_within_t3_d4_results$cohen_d,cohen_d5 = target_within_t3_d5_results$cohen_d)
 target_within_t3_cohen_d = rowMeans(target_within_t3_cohen_d)
 target_within_t3_cohen_d
-
 target_within_t3_lower = data.frame(lower1 = target_within_t3_d1_results$lower, lower2 = target_within_t3_d2_results$lower, lower3 = target_within_t3_d3_results$lower, lower4 = target_within_t3_d4_results$lower,lower5 = target_within_t3_d5_results$lower)
 target_within_t3_lower = rowMeans(target_within_t3_lower)
 target_within_t3_lower
@@ -634,7 +634,8 @@ target_within_t3_results
 target_within_results = rbind(target_within_t1_results, target_within_t2_results, target_within_t3_results)
 target_within_results
 write.csv(target_within_results, "target_within_results_95.csv", row.names = FALSE)
-
+impute_dat_loop[[1]][18:25]
+impute_dat_loop[[1]][10:17]
 ```
 ###################
 Between ITT Target
@@ -881,3 +882,4 @@ test_se = test_model_sum$cov.unscaled
 sqrt((test_se[,2:3][2]+test_se[,2:3][6])-2*test_se[,2:3][3])
 ### sqrt(p1_var + p2_var-2*covar(p1,p2))
 ```
+
