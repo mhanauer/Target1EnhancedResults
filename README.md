@@ -899,6 +899,36 @@ est_se_con$est_con = ifelse(est_se_con$p_values < .05, paste0(est_se_con$est_con
 est_se_con$est_con
 write.csv(est_se_con, "est_se_con.csv")
 ```
+#############
+Omegas
+```{r}
+library(psych)
+RAS_b_1_pyscho = datAdult[,c(14:21, 28)]
+summary(omega(RAS_b_1_pyscho))
+
+RAS_b_2_pyscho = datAdult[,c(25:27)]
+summary(omega(RAS_b_2_pyscho))
+
+RAS_b_3_pyscho = datAdult[,9:13]
+summary(omega(RAS_b_3_pyscho))
+
+RAS_b_5_pyscho = datAdult[,22:24]
+summary(omega(RAS_b_5_pyscho))
+
+
+INQ_b_2_pyscho = datAdult[,35:38]
+summary(omega(INQ_b_2_pyscho))
+
+
+SIS_b_1_pyscho  = datAdult[,44:47]
+summary(omega(SIS_b_1_pyscho))
+
+
+SSMI_b_pyscho = datAdult[,39:43]
+summary(omega(SSMI_b_pyscho))
+
+
+```
 
 
 ###############
