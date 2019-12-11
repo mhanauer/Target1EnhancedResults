@@ -273,6 +273,22 @@ con_target = data.frame(mean_target, sd_target, range_target)
 con_target[,1:2] = round(con_target[,1:2],3)
 write.csv(con_target, "con_target.csv")
 ```
+##############################
+Check whether they are linear
+##############################
+```{r}
+outcomes_tests = target_dat_quasi_itt[,10:25]
+hist_results = list() 
+qq_results = list()
+shap_results = list()
+for(i in 1:length(outcomes_tests)){
+  hist_results[[i]] = hist(outcomes_tests[[i]])
+  qq_results[[i]] = qqnorm(outcomes_tests[[i]])
+  shap_results[[i]] = shapiro.test(outcomes_tests[[i]])
+}
+shap_results
+```
+
 #############
 Target Impute
 #############
@@ -287,12 +303,28 @@ dim(impute_dat_loop$imp1)
 impute_dat_loop[[1]][,c(2,10:17)]
 impute_dat_loop[[1]][,c(2,18:25)]
 ```
+###################
+Now test linearity
+#################
+```{r}
+outcomes_tests = impute_dat_loop[[1]][,10:25]
+hist_results = list() 
+qq_results = list()
+shap_results = list()
+for(i in 1:length(outcomes_tests)){
+  hist_results[[i]] = hist(outcomes_tests[[i]])
+  qq_results[[i]] = qqnorm(outcomes_tests[[i]])
+  shap_results[[i]] = shapiro.test(outcomes_tests[[i]])
+}
+shap_results
+```
 
 
 ##################
 Target within ITT
 ##################
 ```{r}
+library(effsize)
 #### T1 within change
 target_within_t1_base_d1 = subset(impute_dat_loop[[1]][,c(2,10:17)], treatment == 1)
 head(target_within_t1_base_d1)
