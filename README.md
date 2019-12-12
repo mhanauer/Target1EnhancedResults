@@ -901,6 +901,8 @@ summary(omega(RAS_b_3_pyscho))
 RAS_b_5_pyscho = datAdult[,22:24]
 summary(omega(RAS_b_5_pyscho))
 
+INQ_b_1_pyscho = datAdult[,29:34]
+summary(omega(INQ_b_2_pyscho))
 
 INQ_b_2_pyscho = datAdult[,35:38]
 summary(omega(INQ_b_2_pyscho))
