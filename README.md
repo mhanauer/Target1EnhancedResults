@@ -273,21 +273,7 @@ con_target = data.frame(mean_target, sd_target, range_target)
 con_target[,1:2] = round(con_target[,1:2],3)
 write.csv(con_target, "con_target.csv")
 ```
-##############################
-Check whether they are linear
-##############################
-```{r}
-outcomes_tests = target_dat_quasi_itt[,10:25]
-hist_results = list() 
-qq_results = list()
-shap_results = list()
-for(i in 1:length(outcomes_tests)){
-  hist_results[[i]] = hist(outcomes_tests[[i]])
-  qq_results[[i]] = qqnorm(outcomes_tests[[i]])
-  shap_results[[i]] = shapiro.test(outcomes_tests[[i]])
-}
-shap_results
-```
+
 
 #############
 Target Impute
@@ -303,23 +289,6 @@ dim(impute_dat_loop$imp1)
 impute_dat_loop[[1]][,c(2,10:17)]
 impute_dat_loop[[1]][,c(2,18:25)]
 ```
-###################
-Now test linearity
-#################
-```{r}
-outcomes_tests = impute_dat_loop[[1]][,10:25]
-hist_results = list() 
-qq_results = list()
-shap_results = list()
-for(i in 1:length(outcomes_tests)){
-  hist_results[[i]] = hist(outcomes_tests[[i]])
-  qq_results[[i]] = qqnorm(outcomes_tests[[i]])
-  shap_results[[i]] = shapiro.test(outcomes_tests[[i]])
-}
-shap_results
-```
-
-
 ##################
 Target within ITT
 ##################
@@ -800,6 +769,23 @@ target_between_impute_results$parameter_estimate = ifelse(target_between_impute_
 target_between_impute_results
 write.csv(target_between_impute_results, "target_between_impute_results.csv")
 ```
+##############################
+Check whether they are linear
+##############################
+```{r}
+outcomes_tests = out_diff_dat[[1]][,26:33]
+hist_results = list() 
+qq_results = list()
+shap_results = list()
+for(i in 1:length(outcomes_tests)){
+  hist_results[[i]] = hist(outcomes_tests[[i]], main = paste("Histogram of" , names(outcomes_tests)[[i]]))
+  qq_results[[i]] = qqnorm(outcomes_tests[[i]], main = names(outcomes_tests)[[i]])
+  shap_results[[i]] = shapiro.test(outcomes_tests[[i]])
+}
+shap_results
+```
+
+
 #############################
 Target Between Contrasts
 ############################
