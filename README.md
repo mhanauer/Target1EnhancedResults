@@ -280,20 +280,26 @@ Target Impute
 #############
 ```{r}
 library(Amelia)
-impute_dat = target_dat_quasi_itt
-dim(impute_dat)
-a.out = amelia(x = impute_dat, m = 5, noms = c("treatment" ,"female", "single", "non_white", "sexual_minority", "high_school_greater", "employed"))
-compare.density(a.out, var = "SIS_d_1_average")
-impute_dat_loop = a.out$imputations
-dim(impute_dat_loop$imp1)
+#impute_dat = target_dat_quasi_itt
+#dim(impute_dat)
+#a.out = amelia(x = impute_dat, m = 5, noms = c("treatment" ,"female", "single", "non_white", "sexual_minority", "high_school_greater", "employed"))
+#compare.density(a.out, var = "SIS_d_1_average")
+#impute_dat_loop = a.out$imputations
+#dim(impute_dat_loop$imp1)
+### Load imputed data
+setwd("P:/Evaluation/TN Lives Count_Writing/4_Target1_EnhancedCrisisFollow-up/3_Data & Data Analyses")
+impute_dat_loop = readRDS(file = "impute_dat_loop_target_tlc.rds")
 impute_dat_loop[[1]][,c(2,10:17)]
 impute_dat_loop[[1]][,c(2,18:25)]
+
 ```
+
 ##################
 Target within ITT
 ##################
 ```{r}
 library(effsize)
+uninstall.packages("psych")
 #### T1 within change
 target_within_t1_base_d1 = subset(impute_dat_loop[[1]][,c(2,10:17)], treatment == 1)
 head(target_within_t1_base_d1)
@@ -302,11 +308,13 @@ target_within_t1_base_d1$treatment = NULL
 target_within_t1_dis_d1$treatment = NULL
 target_within_t1_d1_results = list()
 for(i in 1:length(target_within_t1_base_d1)){
-  target_within_t1_d1_results[[i]] = cohen.d(target_within_t1_dis_d1[[i]], target_within_t1_base_d1[[i]], paired = TRUE, conf.level = .95)
+  target_within_t1_d1_results[[i]] = cohen.d(target_within_t1_dis_d1[[i]], target_within_t1_base_d1[[i]] , paired = TRUE,  conf.level = .95)
   target_within_t1_d1_results[[i]] = target_within_t1_d1_results[[i]][c(3,5)]
   
 }
 target_within_t1_d1_results
+
+
 target_within_t1_d1_results =  unlist(target_within_t1_d1_results)
 target_within_t1_d1_results = matrix(target_within_t1_d1_results, ncol = 3, byrow = TRUE)
 target_within_t1_d1_results = data.frame(target_within_t1_d1_results)
