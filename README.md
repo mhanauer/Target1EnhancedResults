@@ -184,6 +184,7 @@ employed = ifelse(datAdult$Employment == 2, 1, ifelse(datAdult$Employment == 3, 
 ### treatment
 treatment =  datAdult$Treatment
 describe.factor(treatment)
+treatment = recode(treatment, "B "= "2")
 ########## 
 # Put together Target dat set
 #################
@@ -192,7 +193,7 @@ target_dat = data.frame(ID = datAdult$ID, treatment, age = datAdult$Age, female,
 
 ### treatment
 treatment =  datAdult$Treatment
-describe.factor(treatment)
+describe.factor(target_dat$treatment)
 ```
 ##############
 Target
@@ -201,44 +202,11 @@ Assess missing data
 ```{r}
 library(MissMech)
 library(naniar)
-#TestMCARNormality(dat_pre_post_adult[,10:92])
+TestMCARNormality(target_dat)
 dim(target_dat)
 target_dat
 var_missing =  miss_var_summary(target_dat)
-var_missing = data.frame(var_missing)
 var_missing
-full_n = dim(target_dat)[1]
-full_n
-############## Ony want those who have 50% or more of completed data
-quasi_itt = apply(target_dat, 1, function(x){sum(is.na(x))})
-quasi_itt
-n_drop = round(.5*length(target_dat),0)
-quasi_itt_dat = data.frame(target_dat,quasi_itt)
-quasi_itt_dat
-quasi_itt_dat = subset(quasi_itt_dat, quasi_itt < n_drop)
-dim(quasi_itt_dat)
-quasi_itt_dat$quasi_itt = NULL
-quasi_itt_n = dim(quasi_itt_dat)[1]
-### Percentage of drop for quasi itt
-quasi_itt_drop_out_rate = 1-(dim(quasi_itt_dat)[1]/dim(target_dat)[1])
-quasi_itt_drop_out_rate
-quasi_itt_missing_percent = prop_miss_case(quasi_itt_dat)
-quasi_tot_dat =  quasi_itt_dat 
-quasi_tot_dat = na.omit(quasi_tot_dat)
-quasi_tot_n = dim(quasi_tot_dat)[1]
-quasi_tot_drop_out_rate = 1-(dim(quasi_tot_dat)[1]/dim(target_dat)[1])
-###
-missing_results = data.frame(full_n, quasi_itt_n, quasi_tot_n, quasi_itt_drop_out_rate, quasi_tot_drop_out_rate)
-missing_results = round(missing_results, 3)
-missing_results = t(missing_results)
-colnames(missing_results)= "n_percent"
-#### Add a column with explainations for each of them
-explain = c("Total number of participants.  Excluded if renrollment with data already", "Total number of participants who completed at least 50% of the total assessment. This data set still contains missing values.", "Total number of complete cases.", "Percentage of clients who did not complete at least 50% of the total assessment.", "Percentage of missing data.")
-missing_results = data.frame(missing_results, explain)
-
-write.csv(missing_results, "missing_results.csv")
-target_dat_quasi_itt = quasi_itt_dat
-target_dat_quasi_itt
 ```
 ####################
 Target Descriptives
@@ -246,24 +214,24 @@ Target Descriptives
 ```{r}
 library(psych)
 ##N
-dim(target_dat_quasi_itt)
-describe.factor(target_dat_quasi_itt$treatment)
-des_cat_target_dat_quasi_itt = target_dat_quasi_itt[,c(2,4:9)]
-des_cat_target_dat_quasi_itt = apply(des_cat_target_dat_quasi_itt, 2, function(x){describe.factor(x, decr.order = FALSE)})
-des_cat_target_dat_quasi_itt = data.frame(des_cat_target_dat_quasi_itt)
-des_cat_target_dat_quasi_itt = t(des_cat_target_dat_quasi_itt)
-des_cat_target_dat_quasi_itt
-des_cat_target_dat_quasi_itt = data.frame(des_cat_target_dat_quasi_itt)
-des_cat_target_dat_quasi_itt$Percent = round(des_cat_target_dat_quasi_itt$Percent, 3)
-des_cat_target_dat_quasi_itt
-write.csv(des_cat_target_dat_quasi_itt, "des_cat_target_dat_quasi_itt.csv")
+dim(target_dat)
+describe.factor(target_dat$treatment)
+des_cat_target_dat = target_dat[,c(2,4:9)]
+des_cat_target_dat = apply(des_cat_target_dat, 2, function(x){describe.factor(x, decr.order = FALSE)})
+des_cat_target_dat = data.frame(des_cat_target_dat)
+des_cat_target_dat = t(des_cat_target_dat)
+des_cat_target_dat
+des_cat_target_dat = data.frame(des_cat_target_dat)
+des_cat_target_dat$Percent = round(des_cat_target_dat$Percent, 3)
+des_cat_target_dat
+write.csv(des_cat_target_dat, "des_cat_target_dat.csv")
 
-des_con_target_dat_quasi_itt = target_dat_quasi_itt[,c(3,10:25)]
-des_con_target_dat_quasi_itt
-mean_target = apply(des_con_target_dat_quasi_itt, 2, mean, na.rm = TRUE)
+des_con_target_dat = target_dat[,c(3,10:25)]
+des_con_target_dat
+mean_target = apply(des_con_target_dat, 2, mean, na.rm = TRUE)
 mean_target
-sd_target = apply(des_con_target_dat_quasi_itt, 2, sd, na.rm = TRUE)
-range_target = apply(des_con_target_dat_quasi_itt, 2, range, na.rm = TRUE)
+sd_target = apply(des_con_target_dat, 2, sd, na.rm = TRUE)
+range_target = apply(des_con_target_dat, 2, range, na.rm = TRUE)
 range_target = t(range_target)
 range_target = data.frame(range_target)
 range_target = round(range_target,3)
@@ -272,6 +240,7 @@ range_target
 con_target = data.frame(mean_target, sd_target, range_target)
 con_target[,1:2] = round(con_target[,1:2],3)
 write.csv(con_target, "con_target.csv")
+
 ```
 
 
@@ -280,12 +249,13 @@ Target Impute
 #############
 ```{r}
 library(Amelia)
-#impute_dat = target_dat_quasi_itt
-#dim(impute_dat)
+impute_dat = target_dat
+dim(impute_dat)
 #a.out = amelia(x = impute_dat, m = 5, noms = c("treatment" ,"female", "single", "non_white", "sexual_minority", "high_school_greater", "employed"))
-#compare.density(a.out, var = "SIS_d_1_average")
-#impute_dat_loop = a.out$imputations
-#dim(impute_dat_loop$imp1)
+compare.density(a.out, var = "SIS_d_1_average")
+impute_dat_loop = a.out$imputations
+dim(impute_dat_loop$imp1)
+#saveRDS(impute_dat_loop, file = "impute_dat_loop_target_tlc.rds")
 ### Load imputed data
 setwd("P:/Evaluation/TN Lives Count_Writing/4_Target1_EnhancedCrisisFollow-up/3_Data & Data Analyses")
 impute_dat_loop = readRDS(file = "impute_dat_loop_target_tlc.rds")
@@ -299,7 +269,7 @@ Target within ITT
 ##################
 ```{r}
 library(effsize)
-uninstall.packages("psych")
+#uninstall.packages("psych")
 #### T1 within change
 target_within_t1_base_d1 = subset(impute_dat_loop[[1]][,c(2,10:17)], treatment == 1)
 head(target_within_t1_base_d1)
@@ -407,7 +377,7 @@ target_within_t1_upper = rowMeans(target_within_t1_upper)
 target_within_t1_upper
 
 target_within_t1_results = data.frame(cohen_d = target_within_t1_cohen_d, lower = target_within_t1_lower, upper = target_within_t1_upper)
-target_within_t1_results = round(target_within_t1_results, 3)
+target_within_t1_results = round(target_within_t1_results, 2)
 target_within_t1_results
 target_within_t1_results$cohen_d = ifelse(target_within_t1_results$lower < 0 & target_within_t1_results$upper > 0, target_within_t1_results$cohen_d, paste0(target_within_t1_results$cohen_d, "*"))
 target_within_t1_results
@@ -520,7 +490,7 @@ target_within_t2_upper = rowMeans(target_within_t2_upper)
 target_within_t2_upper
 
 target_within_t2_results = data.frame(cohen_d = target_within_t2_cohen_d, lower = target_within_t2_lower, upper = target_within_t2_upper)
-target_within_t2_results = round(target_within_t2_results, 3)
+target_within_t2_results = round(target_within_t2_results, 2)
 target_within_t2_results
 target_within_t2_results$cohen_d = ifelse(target_within_t2_results$lower < 0 & target_within_t2_results$upper > 0, target_within_t2_results$cohen_d, paste0(target_within_t2_results$cohen_d, "*"))
 target_within_t2_results
@@ -616,7 +586,7 @@ target_within_t3_d5_results
 target_within_t3_d5_results =  unlist(target_within_t3_d5_results)
 target_within_t3_d5_results = matrix(target_within_t3_d5_results, ncol = 3, byrow = TRUE)
 target_within_t3_d5_results = data.frame(target_within_t3_d5_results)
-target_within_t3_d5_results = round(target_within_t3_d5_results, 3)
+target_within_t3_d5_results = round(target_within_t3_d5_results, 2)
 colnames(target_within_t3_d5_results) = c("cohen_d", "lower", "upper")
 target_within_t3_d5_results
 
