@@ -251,8 +251,18 @@ Target Impute
 library(Amelia)
 impute_dat = target_dat
 dim(impute_dat)
-#a.out = amelia(x = impute_dat, m = 5, noms = c("treatment" ,"female", "single", "non_white", "sexual_minority", "high_school_greater", "employed"))
+a.out = amelia(x = impute_dat, m = 5, noms = c("treatment" ,"female", "single", "non_white", "sexual_minority", "high_school_greater", "employed"))
 compare.density(a.out, var = "SIS_d_1_average")
+compare.density(a.out, var = "SSMI_d_average")
+compare.density(a.out, var = "INQ_d_2_average")
+compare.density(a.out, var = "INQ_d_1_average")
+compare.density(a.out, var = "RAS_d_5_average")
+compare.density(a.out, var = "RAS_d_3_average")
+compare.density(a.out, var = "RAS_d_3_average")
+
+
+
+
 impute_dat_loop = a.out$imputations
 dim(impute_dat_loop$imp1)
 #saveRDS(impute_dat_loop, file = "impute_dat_loop_target_tlc.rds")
