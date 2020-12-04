@@ -249,9 +249,6 @@ Target Impute
 #############
 ```{r}
 library(Amelia)
-impute_dat = target_dat
-dim(impute_dat)
-impute_dat[,10:25]
 ### Bound all results
 #bounds = matrix(c(10,1,5, 11,1,5, 12,1,5, 13,1,5, 14,1,7, 15,1,7, 16,1,9, 17,1,5, 18,1,5, 19,1,5, 20,1,5, 21,1,5, 22,1,7, 23,1,7, 24,1,9, 25,1,5),nrow = 16, ncol = 3, byrow = TRUE)
 #bounds
@@ -272,7 +269,6 @@ compare.density(a.out, var = "RAS_d_3_average")
 
 impute_dat_loop = a.out$imputations
 dim(impute_dat_loop$imp1)
-apply(na.omit(impute_dat), 2, range)
 apply(impute_dat_loop$imp1, 2, range)
 impute_dat_loop[[1]][,c(2,10:17)]
 impute_dat_loop[[1]][,c(2,18:25)]
@@ -633,6 +629,131 @@ write.csv(target_within_results, "target_within_results_95.csv", row.names = FAL
 impute_dat_loop[[1]][18:25]
 impute_dat_loop[[1]][10:17]
 ```
+#######################
+Target 1 overall within results
+###########################
+```{r}
+library(effsize)
+#uninstall.packages("psych")
+#### T1 within change
+target_within_t1_base_d1 = subset(impute_dat_loop[[1]][,c(2,10:17)])
+head(target_within_t1_base_d1)
+target_within_t1_dis_d1 = subset(impute_dat_loop[[1]][,c(2,18:25)])
+target_within_t1_base_d1$treatment = NULL
+target_within_t1_dis_d1$treatment = NULL
+target_within_t1_d1_results = list()
+for(i in 1:length(target_within_t1_base_d1)){
+  target_within_t1_d1_results[[i]] = effsize::cohen.d(target_within_t1_dis_d1[[i]], target_within_t1_base_d1[[i]] , paired = TRUE,  conf.level = .95)
+  target_within_t1_d1_results[[i]] = target_within_t1_d1_results[[i]][c(3,5)]
+  
+}
+target_within_t1_d1_results
+
+
+target_within_t1_d1_results =  unlist(target_within_t1_d1_results)
+target_within_t1_d1_results = matrix(target_within_t1_d1_results, ncol = 3, byrow = TRUE)
+target_within_t1_d1_results = data.frame(target_within_t1_d1_results)
+target_within_t1_d1_results = round(target_within_t1_d1_results, 3)
+colnames(target_within_t1_d1_results) = c("cohen_d", "lower", "upper")
+target_within_t1_d1_results
+
+target_within_t1_base_d2 = subset(impute_dat_loop[[2]][,c(2,10:17)])
+target_within_t1_dis_d2 = subset(impute_dat_loop[[2]][,c(2,18:25)])
+target_within_t1_base_d2$treatment = NULL
+target_within_t1_dis_d2$treatment = NULL
+target_within_t1_d2_results = list()
+for(i in 1:length(target_within_t1_base_d2)){
+  target_within_t1_d2_results[[i]] = effsize::cohen.d(target_within_t1_dis_d2[[i]], target_within_t1_base_d2[[i]], paired = TRUE,  conf.level = .95)
+  target_within_t1_d2_results[[i]] = target_within_t1_d2_results[[i]][c(3,5)]
+  
+}
+target_within_t1_d2_results
+target_within_t1_d2_results =  unlist(target_within_t1_d2_results)
+target_within_t1_d2_results = matrix(target_within_t1_d2_results, ncol = 3, byrow = TRUE)
+target_within_t1_d2_results = data.frame(target_within_t1_d2_results)
+target_within_t1_d2_results = round(target_within_t1_d2_results, 3)
+colnames(target_within_t1_d2_results) = c("cohen_d", "lower", "upper")
+target_within_t1_d2_results
+
+target_within_t1_base_d3 = subset(impute_dat_loop[[2]][,c(2,10:17)])
+target_within_t1_dis_d3 = subset(impute_dat_loop[[2]][,c(2,18:25)])
+target_within_t1_base_d3$treatment = NULL
+target_within_t1_dis_d3$treatment = NULL
+target_within_t1_d3_results = list()
+for(i in 1:length(target_within_t1_base_d3)){
+  target_within_t1_d3_results[[i]] = effsize::cohen.d(target_within_t1_dis_d3[[i]], target_within_t1_base_d3[[i]], paired = TRUE,  conf.level = .95)
+  target_within_t1_d3_results[[i]] = target_within_t1_d3_results[[i]][c(3,5)]
+  
+}
+target_within_t1_d3_results
+target_within_t1_d3_results =  unlist(target_within_t1_d3_results)
+target_within_t1_d3_results = matrix(target_within_t1_d3_results, ncol = 3, byrow = TRUE)
+target_within_t1_d3_results = data.frame(target_within_t1_d3_results)
+target_within_t1_d3_results = round(target_within_t1_d3_results, 3)
+colnames(target_within_t1_d3_results) = c("cohen_d", "lower", "upper")
+target_within_t1_d3_results
+
+target_within_t1_base_d4 = subset(impute_dat_loop[[2]][,c(2,10:17)])
+target_within_t1_dis_d4 = subset(impute_dat_loop[[2]][,c(2,18:25)])
+target_within_t1_base_d4$treatment = NULL
+target_within_t1_dis_d4$treatment = NULL
+target_within_t1_d4_results = list()
+for(i in 1:length(target_within_t1_base_d4)){
+  target_within_t1_d4_results[[i]] = effsize::cohen.d(target_within_t1_dis_d4[[i]], target_within_t1_base_d4[[i]], paired = TRUE,  conf.level = .95)
+  target_within_t1_d4_results[[i]] = target_within_t1_d4_results[[i]][c(3,5)]
+  
+}
+target_within_t1_d4_results
+target_within_t1_d4_results =  unlist(target_within_t1_d4_results)
+target_within_t1_d4_results = matrix(target_within_t1_d4_results, ncol = 3, byrow = TRUE)
+target_within_t1_d4_results = data.frame(target_within_t1_d4_results)
+target_within_t1_d4_results = round(target_within_t1_d4_results, 3)
+colnames(target_within_t1_d4_results) = c("cohen_d", "lower", "upper")
+target_within_t1_d4_results
+
+target_within_t1_base_d5 = subset(impute_dat_loop[[2]][,c(2,10:17)], treatment == 1)
+target_within_t1_dis_d5 = subset(impute_dat_loop[[2]][,c(2,18:25)], treatment == 1)
+target_within_t1_base_d5$treatment = NULL
+target_within_t1_dis_d5$treatment = NULL
+target_within_t1_d5_results = list()
+for(i in 1:length(target_within_t1_base_d5)){
+  target_within_t1_d5_results[[i]] = effsize::cohen.d(target_within_t1_dis_d5[[i]], target_within_t1_base_d5[[i]], paired = TRUE,  conf.level = .95)
+  target_within_t1_d5_results[[i]] = target_within_t1_d5_results[[i]][c(3,5)]
+  
+}
+target_within_t1_d5_results
+target_within_t1_d5_results =  unlist(target_within_t1_d5_results)
+target_within_t1_d5_results = matrix(target_within_t1_d5_results, ncol = 3, byrow = TRUE)
+target_within_t1_d5_results = data.frame(target_within_t1_d5_results)
+target_within_t1_d5_results = round(target_within_t1_d5_results, 3)
+colnames(target_within_t1_d5_results) = c("cohen_d", "lower", "upper")
+target_within_t1_d5_results
+
+target_within_t1_cohen_d = data.frame(cohen_d1 = target_within_t1_d1_results$cohen_d, cohen_d2 = target_within_t1_d2_results$cohen_d, cohen_d3 = target_within_t1_d3_results$cohen_d, cohen_d4 = target_within_t1_d4_results$cohen_d,cohen_d5 = target_within_t1_d5_results$cohen_d)
+target_within_t1_cohen_d = rowMeans(target_within_t1_cohen_d)
+target_within_t1_cohen_d
+
+target_within_t1_lower = data.frame(lower1 = target_within_t1_d1_results$lower, lower2 = target_within_t1_d2_results$lower, lower3 = target_within_t1_d3_results$lower, lower4 = target_within_t1_d4_results$lower,lower5 = target_within_t1_d5_results$lower)
+target_within_t1_lower = rowMeans(target_within_t1_lower)
+target_within_t1_lower
+
+target_within_t1_upper = data.frame(upper1 = target_within_t1_d1_results$upper, upper2 = target_within_t1_d2_results$upper, upper3 = target_within_t1_d3_results$upper, upper4 = target_within_t1_d4_results$upper,upper5 = target_within_t1_d5_results$upper)
+target_within_t1_upper = rowMeans(target_within_t1_upper)
+target_within_t1_upper
+
+target_within_t1_results = data.frame(cohen_d = target_within_t1_cohen_d, lower = target_within_t1_lower, upper = target_within_t1_upper)
+target_within_t1_results = round(target_within_t1_results, 2)
+target_within_t1_results
+target_within_t1_results$cohen_d = ifelse(target_within_t1_results$lower < 0 & target_within_t1_results$upper > 0, target_within_t1_results$cohen_d, paste0(target_within_t1_results$cohen_d, "*"))
+target_within_t1_results
+target_within_t1_results$ci_95 = paste0(target_within_t1_results$lower, sep = ",", target_within_t1_results$upper)
+target_within_t1_results[,2:3] = NULL
+target_within_t1_results
+write.csv(target_within_t1_results, "target_within_t1_results.csv", row.names = FALSE )
+
+```
+
+
 ##############################
 Complete Target within results
 ##############################
